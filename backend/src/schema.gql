@@ -1,0 +1,113 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type RestaurantGql {
+  id: ID!
+  ownerId: String!
+  name: String!
+  description: String
+  category: String!
+  imageUrl: String
+  address: String!
+  phone: String
+  isOpen: Boolean!
+  rating: Float!
+  createdAt: DateTime!
+  categories: [CategoryGql!]!
+  menuItems: [MenuItemGql!]!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type MenuItemGql {
+  id: ID!
+  restaurantId: String!
+  categoryId: String
+  name: String!
+  description: String
+  price: Float!
+  imageUrl: String
+  isAvailable: Boolean!
+  createdAt: DateTime!
+}
+
+type CategoryGql {
+  id: ID!
+  restaurantId: String!
+  name: String!
+  menuItems: [MenuItemGql!]
+}
+
+type UserProfileGql {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  phone: String
+  avatarUrl: String
+  address: String
+}
+
+type UserGql {
+  id: ID!
+  email: String!
+  role: String!
+  profile: UserProfileGql
+  createdAt: DateTime!
+}
+
+type OrderItemGql {
+  id: ID!
+  orderId: String!
+  menuItemId: String!
+  unitPrice: Float!
+  subtotal: Float!
+  quantity: Float!
+  menuItem: MenuItemGql
+}
+
+type PaymentGql {
+  id: ID!
+  orderId: String!
+  amount: Float!
+  status: String!
+  stripePaymentId: String
+  paidAt: DateTime
+}
+
+type AuditLogGql {
+  id: ID!
+  orderId: String!
+  eventType: String!
+  fromStatus: String
+  toStatus: String
+  triggeredBy: String!
+  createdAt: DateTime!
+}
+
+type OrderGql {
+  id: ID!
+  customerId: String!
+  restaurantId: String!
+  status: String!
+  totalPrice: Float!
+  notes: String
+  address: String!
+  items: [OrderItemGql!]!
+  payment: PaymentGql
+  auditLogs: [AuditLogGql!]
+  restaurant: RestaurantGql
+  customer: UserGql
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Query {
+  restaurants: [RestaurantGql!]!
+  restaurant(id: String!): RestaurantGql!
+  orders: [OrderGql!]!
+  order(id: String!): OrderGql!
+}

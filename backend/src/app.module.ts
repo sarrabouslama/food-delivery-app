@@ -11,6 +11,8 @@ import { UsersModule } from './modules/users/users.module';
 
 import { OrdersModule } from './orders/orders.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { RestaurantsModule } from './modules/restaurants/restaurants.module';
+import { AppGraphQLModule } from './modules/graphql/graphql.module';
 
 @Module({
   imports: [
@@ -23,8 +25,10 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     PrismaModule,
     AuthModule,
     UsersModule,
+    RestaurantsModule,
     OrdersModule, 
     WebhooksModule,
+    AppGraphQLModule,
   ],
 
   controllers: [AppController],
