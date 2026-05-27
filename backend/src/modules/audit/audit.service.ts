@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, EventType, OrderStatus } from '@prisma/client';
 
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface LogEventInput {
   orderId: string;
