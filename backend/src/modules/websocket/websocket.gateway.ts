@@ -9,7 +9,7 @@ import {
   ConnectedSocket,
   WsException,
 } from '@nestjs/websockets';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger, UsePipes, ValidationPipe } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
 import { WebsocketService } from './websocket.service';
@@ -20,11 +20,23 @@ import {
   WS_ORDER_UNSUBSCRIBE,
   WS_ORDER_STATUS_UPDATED,
   WS_NOTIFICATION_NEW,
-  WsOrderSubscribe,
-  WsOrderUnsubscribe,
 } from 'src/contracts/websocket.types';
-import { OrderEventPayload, EventType } from 'src/contracts/events.types';
+import { OrderEventPayload } from 'src/contracts/events.types';
 import { Role } from 'src/contracts/auth.types';
+import { OrderRoomDto } from './dto/order-room.dto';
+
+const wsValidationPipe = new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: true,
+  transform: true,
+  exceptionFactory: (errors) => {
+    const message = errors
+      .flatMap((error) => Object.values(error.constraints ?? {}))
+      .join('; ');
+
+    return new WsException(message || 'Invalid WebSocket payload');
+  },
+});
 
 // ── Gateway ────────────────────────────────────────────────────────────────
 // Listens on ws://localhost:3000 (same port as HTTP via socket.io adapter)
@@ -128,12 +140,11 @@ export class WebsocketGateway
   // ── Client → Server messages ─────────────────────────────────────────────
 
   @SubscribeMessage(WS_ORDER_SUBSCRIBE)
+  @UsePipes(wsValidationPipe)
   async handleOrderSubscribe(
-    @MessageBody() body: WsOrderSubscribe,
+    @MessageBody() body: OrderRoomDto,
     @ConnectedSocket() client: Socket,
   ) {
-    if (!body?.orderId) throw new WsException('orderId is required');
-
     const userId = client.data.userId as string | undefined;
     const role = client.data.role as Role | undefined;
     if (!userId || !role) throw new WsException('Unauthorized');
@@ -153,12 +164,11 @@ export class WebsocketGateway
   }
 
   @SubscribeMessage(WS_ORDER_UNSUBSCRIBE)
+  @UsePipes(wsValidationPipe)
   handleOrderUnsubscribe(
-    @MessageBody() body: WsOrderUnsubscribe,
+    @MessageBody() body: OrderRoomDto,
     @ConnectedSocket() client: Socket,
   ) {
-    if (!body?.orderId) throw new WsException('orderId is required');
-
     client.leave(`order:${body.orderId}`);
     this.logger.log(`Client ${client.id} unsubscribed from order:${body.orderId}`);
 
@@ -199,6 +209,8 @@ export class WebsocketGateway
   @OnEvent('ORDER_OUT_FOR_DELIVERY')
   @OnEvent('ORDER_DELIVERED')
   @OnEvent('ORDER_CANCELLED')
+  @OnEvent('PAYMENT_RECEIVED')
+  @OnEvent('PAYMENT_FAILED')
   async handleOrderEvent(payload: OrderEventPayload) {
     // Validate event payload
     const validation = this.wsService.validateEventPayload(payload);
@@ -247,97 +259,5 @@ export class WebsocketGateway
     this.logger.log(
       `Emitted ${WS_ORDER_STATUS_UPDATED} for order:${payload.orderId} → ${payload.toStatus}`,
     );
-  }
-
-  @OnEvent('PAYMENT_RECEIVED')
-  async handlePaymentReceived(payload: OrderEventPayload) {
-    // Validate event payload
-    const validation = this.wsService.validateEventPayload(payload);
-    if (!validation.valid) {
-      this.logger.error(`Invalid payment event payload: ${validation.errors.join(', ')}`);
-      return;
-    }
-
-    // 1. Notify customer about payment
-    const notification = await this.notificationsService.createAndEmit(payload);
-    this.server
-      .to(`user:${payload.customerId}`)
-      .emit(WS_NOTIFICATION_NEW, notification);
-
-    // 2. Broadcast payment update to the order room (all subscribers)
-    this.server.to(`order:${payload.orderId}`).emit(WS_ORDER_STATUS_UPDATED, {
-      orderId: payload.orderId,
-      fromStatus: payload.fromStatus,
-      toStatus: payload.toStatus,
-      timestamp: payload.timestamp.toISOString(),
-    });
-
-    // 3. Notify restaurant owner about payment
-    try {
-      const restaurant = await this.prisma.restaurant.findUnique({
-        where: { id: payload.restaurantId },
-        select: { ownerId: true },
-      });
-
-      if (restaurant?.ownerId) {
-        const restaurantNotification = await this.notificationsService.createAndEmit(
-          payload,
-          restaurant.ownerId,
-        );
-        this.server
-          .to(`user:${restaurant.ownerId}`)
-          .emit(WS_NOTIFICATION_NEW, restaurantNotification);
-      }
-    } catch (error) {
-      this.logger.error(
-        `Failed to notify restaurant owner for order ${payload.orderId}: ${error}`,
-      );
-    }
-  }
-
-  @OnEvent('PAYMENT_FAILED')
-  async handlePaymentFailed(payload: OrderEventPayload) {
-    // Validate event payload
-    const validation = this.wsService.validateEventPayload(payload);
-    if (!validation.valid) {
-      this.logger.error(`Invalid payment event payload: ${validation.errors.join(', ')}`);
-      return;
-    }
-
-    // 1. Notify customer about payment failure
-    const notification = await this.notificationsService.createAndEmit(payload);
-    this.server
-      .to(`user:${payload.customerId}`)
-      .emit(WS_NOTIFICATION_NEW, notification);
-
-    // 2. Broadcast payment failure to the order room (all subscribers)
-    this.server.to(`order:${payload.orderId}`).emit(WS_ORDER_STATUS_UPDATED, {
-      orderId: payload.orderId,
-      fromStatus: payload.fromStatus,
-      toStatus: payload.toStatus,
-      timestamp: payload.timestamp.toISOString(),
-    });
-
-    // 3. Notify restaurant owner about payment failure
-    try {
-      const restaurant = await this.prisma.restaurant.findUnique({
-        where: { id: payload.restaurantId },
-        select: { ownerId: true },
-      });
-
-      if (restaurant?.ownerId) {
-        const restaurantNotification = await this.notificationsService.createAndEmit(
-          payload,
-          restaurant.ownerId,
-        );
-        this.server
-          .to(`user:${restaurant.ownerId}`)
-          .emit(WS_NOTIFICATION_NEW, restaurantNotification);
-      }
-    } catch (error) {
-      this.logger.error(
-        `Failed to notify restaurant owner for order ${payload.orderId}: ${error}`,
-      );
-    }
   }
 }
