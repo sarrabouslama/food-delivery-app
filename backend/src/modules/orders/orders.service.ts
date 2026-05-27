@@ -2,16 +2,16 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentStatus, EventType } from '@prisma/client';
-import { OrderStateMachine } from './order-state.machine';
-import { OrderEventPayload } from '../contracts/events.types';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { OrderEventPayload } from 'src/contracts/events.types';
+import { OrderStateMachine } from './order-state.machine';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   // ── Create Order ────────────────────────────────────────────
 

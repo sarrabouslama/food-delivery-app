@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty, IsOptional, IsPhoneNumber } from 'class-validator
 export class CreateRestaurantDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsOptional()
@@ -11,7 +11,7 @@ export class CreateRestaurantDto {
 
   @IsString()
   @IsNotEmpty()
-  category: string;
+  category!: string;
 
   @IsString()
   @IsOptional()
@@ -19,7 +19,7 @@ export class CreateRestaurantDto {
 
   @IsString()
   @IsNotEmpty()
-  address: string;
+  address!: string;
 
   @IsString()
   @IsOptional()

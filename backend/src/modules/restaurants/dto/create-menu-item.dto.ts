@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsUUID } from 'c
 export class CreateMenuItemDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsOptional()
@@ -11,7 +11,7 @@ export class CreateMenuItemDto {
 
   @IsNumber()
   @IsNotEmpty()
-  price: number;
+  price!: number;
 
   @IsString()
   @IsOptional()

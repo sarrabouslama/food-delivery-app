@@ -3,43 +3,43 @@ import { Field, ID, Float, ObjectType } from '@nestjs/graphql';
 @ObjectType()
 export class MenuItemGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  restaurantId: string;
+  restaurantId!: string;
 
   @Field({ nullable: true })
   categoryId?: string;
 
   @Field()
-  name: string;
+  name!: string;
 
   @Field({ nullable: true })
   description?: string;
 
   @Field(() => Float)
-  price: number;
+  price!: number;
 
   @Field({ nullable: true })
   imageUrl?: string;
 
   @Field()
-  isAvailable: boolean;
+  isAvailable!: boolean;
 
   @Field()
-  createdAt: Date;
+  createdAt!: Date;
 }
 
 @ObjectType()
 export class CategoryGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  restaurantId: string;
+  restaurantId!: string;
 
   @Field()
-  name: string;
+  name!: string;
 
   @Field(() => [MenuItemGql], { nullable: true })
   menuItems?: MenuItemGql[];

@@ -1,34 +1,48 @@
-import 'dotenv/config'; // Load .env file at startup
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
+import { NestFactory }                from '@nestjs/core';
+import { ValidationPipe, Logger }    from '@nestjs/common';
+import { IoAdapter }                 from '@nestjs/platform-socket.io';
+import { AppModule }                 from './app.module';
 import { json, raw } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
+  const app    = await NestFactory.create(AppModule);
 
+  // ── CORS ──────────────────────────────────────────────────
+  app.enableCors({
+    origin:      process.env.FRONTEND_URL ?? 'http://localhost:3001',
+    credentials: true,
+  });
 
-   // Configure raw body parser for Stripe webhook verification
+  // Configure raw body parser for Stripe webhook verification
   // Stripe signature verification requires the raw request body (bytes)
   app.use('/webhooks/payment', raw({ type: 'application/json' }));
 
-  
-  // Global validation pipe — activates class-validator decorators on all DTOs
+  // ── Global validation pipe ────────────────────────────────
+  // Strips unknown fields and validates all incoming DTOs
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // strip unknown fields from requests
-      forbidNonWhitelisted: true, // throw 400 if unknown fields are sent
-      transform: true, // auto-transform payloads to DTO class instances
+      whitelist:        true,   // strip fields not in DTO
+      forbidNonWhitelisted: true,
+      transform:        true,   // auto-transform payloads to DTO instances
+      transformOptions: { enableImplicitConversion: true },
     }),
   );
 
-  // CORS — allow requests from the frontend dev server
-  app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
-    credentials: true,
-  });
-  
+  // ── Socket.io adapter ─────────────────────────────────────
+  // Replaces the default adapter so WebSocket gateway works.
+  // When you add Redis (for multi-instance support), swap this
+  // with RedisIoAdapter — see comment below.
+  app.useWebSocketAdapter(new IoAdapter(app));
 
-  await app.listen(process.env.PORT ?? 3000);
+  // ── Global prefix ─────────────────────────────────────────
+  app.setGlobalPrefix('api');   // all REST routes → /api/...
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  logger.log(`Application running on http://localhost:${port}`);
+  logger.log(`WebSocket ready   on ws://localhost:${port}`);
+  logger.log(`GraphQL playground on http://localhost:${port}/api/graphql`);
 }
+
 bootstrap();

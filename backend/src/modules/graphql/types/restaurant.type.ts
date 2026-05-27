@@ -3,35 +3,35 @@ import { Field, ID, Float, ObjectType } from '@nestjs/graphql';
 @ObjectType()
 export class RestaurantGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  ownerId: string;
+  ownerId!: string;
 
   @Field()
-  name: string;
+  name!: string;
 
   @Field({ nullable: true })
   description?: string;
 
   @Field()
-  category: string;
+  category!: string;
 
   @Field({ nullable: true })
   imageUrl?: string;
 
   @Field()
-  address: string;
+  address!: string;
 
   @Field({ nullable: true })
   phone?: string;
 
   @Field()
-  isOpen: boolean;
+  isOpen!: boolean;
 
   @Field(() => Float)
-  rating: number;
+  rating!: number;
 
   @Field()
-  createdAt: Date;
+  createdAt!: Date;
 }

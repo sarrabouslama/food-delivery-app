@@ -3,13 +3,13 @@ import { Field, ID, ObjectType } from '@nestjs/graphql';
 @ObjectType()
 export class UserProfileGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  firstName: string;
+  firstName!: string;
 
   @Field()
-  lastName: string;
+  lastName!: string;
 
   @Field({ nullable: true })
   phone?: string;
@@ -24,17 +24,17 @@ export class UserProfileGql {
 @ObjectType()
 export class UserGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  email: string;
+  email!: string;
 
   @Field()
-  role: string;
+  role!: string;
 
   @Field(() => UserProfileGql, { nullable: true })
   profile?: UserProfileGql;
 
   @Field()
-  createdAt: Date;
+  createdAt!: Date;
 }
