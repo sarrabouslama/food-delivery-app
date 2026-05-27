@@ -18,8 +18,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         const expiresIn = config.get<string>('jwt.expiresIn');
         return {
           secret: secret!,
-          signOptions: { 
-            expiresIn: expiresIn as any
+          signOptions: {
+            expiresIn: expiresIn as any,
           },
         };
       },

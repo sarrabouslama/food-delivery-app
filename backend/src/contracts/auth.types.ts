@@ -1,11 +1,11 @@
 export enum Role {
-  CUSTOMER = "CUSTOMER",
-  RESTAURANT = "RESTAURANT",
+  CUSTOMER = 'CUSTOMER',
+  RESTAURANT = 'RESTAURANT',
 }
 
 // Shape of the decoded JWT payload
 export interface JwtPayload {
-  sub: string;        // user ID
+  sub: string; // user ID
   email: string;
   role: Role;
   iat: number;

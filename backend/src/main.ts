@@ -8,9 +8,9 @@ async function bootstrap() {
   // Global validation pipe — activates class-validator decorators on all DTOs
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,        // strip unknown fields from requests
+      whitelist: true, // strip unknown fields from requests
       forbidNonWhitelisted: true, // throw 400 if unknown fields are sent
-      transform: true,        // auto-transform payloads to DTO class instances
+      transform: true, // auto-transform payloads to DTO class instances
     }),
   );
 
