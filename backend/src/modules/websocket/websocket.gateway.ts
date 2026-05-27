@@ -11,6 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger, UsePipes, ValidationPipe } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { EventType } from '@prisma/client';
 import { Server, Socket } from 'socket.io';
 import { WebsocketService } from './websocket.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -227,37 +228,52 @@ export class WebsocketGateway
       timestamp: payload.timestamp.toISOString(),
     });
 
-    // 2. Create and push notification to the customer
-    const notification = await this.notificationsService.createAndEmit(payload);
-    this.server
-      .to(`user:${payload.customerId}`)
-      .emit(WS_NOTIFICATION_NEW, notification);
+    if (this.shouldNotifyCustomer(payload.eventType)) {
+      const notification = await this.notificationsService.createAndEmit(payload, payload.customerId, 'CUSTOMER');
+      this.server
+        .to(`user:${payload.customerId}`)
+        .emit(WS_NOTIFICATION_NEW, notification);
+    }
 
-    // 3. Create and push notification to the restaurant owner
-    try {
-      const restaurant = await this.prisma.restaurant.findUnique({
-        where: { id: payload.restaurantId },
-        select: { ownerId: true },
-      });
+    if (payload.eventType === EventType.ORDER_CREATED) {
+      try {
+        const restaurant = await this.prisma.restaurant.findUnique({
+          where: { id: payload.restaurantId },
+          select: { ownerId: true },
+        });
 
-      if (restaurant?.ownerId) {
-        const restaurantNotification = await this.notificationsService.createAndEmit(
-          payload,
-          restaurant.ownerId,
+        if (restaurant?.ownerId) {
+          const restaurantNotification = await this.notificationsService.createAndEmit(
+            payload,
+            restaurant.ownerId,
+            'RESTAURANT',
+          );
+          this.server
+            .to(`user:${restaurant.ownerId}`)
+            .emit(WS_NOTIFICATION_NEW, restaurantNotification);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to notify restaurant owner for order ${payload.orderId}: ${error}`,
         );
-        this.server
-          .to(`user:${restaurant.ownerId}`)
-          .emit(WS_NOTIFICATION_NEW, restaurantNotification);
       }
-    } catch (error) {
-      this.logger.error(
-        `Failed to notify restaurant owner for order ${payload.orderId}: ${error}`,
-      );
-      // Don't break the customer notification flow if restaurant owner notification fails
     }
 
     this.logger.log(
       `Emitted ${WS_ORDER_STATUS_UPDATED} for order:${payload.orderId} → ${payload.toStatus}`,
     );
+  }
+
+  private shouldNotifyCustomer(eventType: EventType): boolean {
+    switch (eventType) {
+      case EventType.ORDER_CONFIRMED:
+      case EventType.ORDER_PREPARING:
+      case EventType.ORDER_READY:
+      case EventType.ORDER_OUT_FOR_DELIVERY:
+      case EventType.ORDER_DELIVERED:
+        return true;
+      default:
+        return false;
+    }
   }
 }

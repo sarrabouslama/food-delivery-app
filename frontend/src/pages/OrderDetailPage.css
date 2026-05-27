@@ -1,0 +1,236 @@
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+}
+
+.status-container {
+  display: flex;
+  align-items: center;
+}
+
+.live-indicator {
+  display: inline-block;
+  background-color: rgba(15, 157, 116, 0.1);
+  color: var(--color-danger);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: bold;
+  animation: pulse-indicator 2s infinite;
+}
+
+@keyframes pulse-indicator {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.order-content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-6);
+}
+
+.order-detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.main-column,
+.side-column {
+  min-width: 0;
+}
+
+.live-history-panel {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .order-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .live-history-panel {
+    width: 100%;
+  }
+}
+
+.section-title {
+  font-size: 1.25rem;
+  margin-bottom: var(--spacing-4);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.p-6 {
+  padding: var(--spacing-6);
+}
+
+.mb-6 {
+  margin-bottom: var(--spacing-6);
+}
+
+.ml-2 {
+  margin-left: var(--spacing-2);
+}
+
+.border-t {
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.mt-4 {
+  margin-top: var(--spacing-4);
+}
+
+.pt-4 {
+  padding-top: var(--spacing-4);
+}
+
+.order-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-6);
+}
+
+.order-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  font-size: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.order-item-row:last-child {
+  border-bottom: none;
+}
+
+.item-quantity {
+  font-weight: bold;
+  color: var(--color-primary);
+  min-width: 30px;
+}
+
+.item-name {
+  flex: 1;
+}
+
+.item-price {
+  font-weight: 500;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+}
+
+.detail-row {
+  margin-bottom: var(--spacing-2);
+  color: var(--color-text);
+}
+
+.detail-row strong {
+  color: var(--color-text-muted);
+  display: inline-block;
+  min-width: 90px;
+}
+
+.audit-logs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.audit-log-item {
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px dashed rgba(15, 23, 42, 0.08);
+}
+
+.audit-log-item:last-child {
+  border-bottom: none;
+}
+
+.audit-time {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.audit-event {
+  font-size: 0.875rem;
+  text-transform: capitalize;
+}
+
+.receipt-header {
+  margin-bottom: var(--spacing-6);
+}
+
+.receipt-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  margin-bottom: var(--spacing-1);
+}
+
+.receipt-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.9));
+}
+
+.receipt-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  align-items: flex-start;
+}
+
+.receipt-total {
+  padding: var(--spacing-4);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.08), rgba(15, 157, 116, 0.08));
+  min-width: 140px;
+  text-align: right;
+}
+
+.receipt-total span,
+.receipt-label {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.25rem;
+}
+
+.receipt-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.receipt-items-card {
+  background: rgba(255,255,255,0.94);
+}
+
+.receipt-card,
+.receipt-items-card {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.audit-detail {
+  margin-top: 2px;
+}

@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsUUID, IsInt, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsUUID, IsInt, Min, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class OrderItemDto {
@@ -15,6 +15,11 @@ export class CreateOrderDto {
   @IsUUID()
   @IsNotEmpty()
   restaurantId!: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['CASH', 'STRIPE'])
+  paymentMethod?: 'CASH' | 'STRIPE';
 
   @IsString()
   @IsNotEmpty()

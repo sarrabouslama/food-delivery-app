@@ -1,0 +1,33 @@
+.role-selector {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-top: 0.25rem;
+}
+
+.role-option {
+  flex: 1;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+}
+
+.role-option input {
+  display: none;
+}
+
+.role-option:hover {
+  background-color: rgba(29, 78, 216, 0.05);
+  border-color: rgba(29, 78, 216, 0.16);
+}
+
+.role-option.selected {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.1), rgba(15, 157, 116, 0.1));
+}

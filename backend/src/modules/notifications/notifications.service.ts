@@ -6,18 +6,125 @@ import { NotificationType } from '@prisma/client';
 
 const NOTIFICATION_RETENTION_DAYS = 30;
 
-// Human-readable messages for each event type
-const EVENT_MESSAGES: Record<EventType, { title: string; message: string }> = {
-  [EventType.ORDER_CREATED]: { title: 'Order Placed', message: 'Your order has been placed successfully.' },
-  [EventType.ORDER_CONFIRMED]: { title: 'Order Confirmed', message: 'The restaurant confirmed your order.' },
-  [EventType.ORDER_PREPARING]: { title: 'Being Prepared', message: 'The restaurant is now preparing your order.' },
-  [EventType.ORDER_READY]: { title: 'Order Ready', message: 'Your order is ready for pickup/delivery.' },
-  [EventType.ORDER_OUT_FOR_DELIVERY]: { title: 'Out for Delivery', message: 'Your order is on its way!' },
-  [EventType.ORDER_DELIVERED]: { title: 'Order Delivered', message: 'Your order has been delivered. Enjoy!' },
-  [EventType.ORDER_CANCELLED]: { title: 'Order Cancelled', message: 'Your order has been cancelled.' },
-  [EventType.PAYMENT_RECEIVED]: { title: 'Payment Confirmed', message: 'Your payment was received successfully.' },
-  [EventType.PAYMENT_FAILED]: { title: 'Payment Failed', message: 'Your payment failed. Please try again.' },
-};
+type RecipientRole = 'CUSTOMER' | 'RESTAURANT';
+
+function shortOrderId(orderId: string): string {
+  return orderId.slice(-6).toUpperCase();
+}
+
+function buildRoleMessage(payload: OrderEventPayload, recipientRole: RecipientRole, restaurantName?: string) {
+  const orderRef = `#${shortOrderId(payload.orderId)}`;
+
+  if (recipientRole === 'RESTAURANT') {
+    switch (payload.eventType) {
+      case EventType.ORDER_CREATED:
+        return {
+          title: 'New Order Received',
+          message: `Order ${orderRef} has been placed and is waiting for your action.`,
+        };
+      case EventType.ORDER_CONFIRMED:
+        return {
+          title: 'Order Confirmed',
+          message: `Order ${orderRef} is now confirmed and ready for preparation.`,
+        };
+      case EventType.ORDER_PREPARING:
+        return {
+          title: 'Preparing Order',
+          message: `Order ${orderRef} is currently being prepared.`,
+        };
+      case EventType.ORDER_READY:
+        return {
+          title: 'Order Ready',
+          message: `Order ${orderRef} is ready for handoff or delivery.`,
+        };
+      case EventType.ORDER_OUT_FOR_DELIVERY:
+        return {
+          title: 'Order Out for Delivery',
+          message: `Order ${orderRef} is on the way to the customer.`,
+        };
+      case EventType.ORDER_DELIVERED:
+        return {
+          title: 'Order Delivered',
+          message: `Order ${orderRef} was delivered successfully.`,
+        };
+      case EventType.ORDER_CANCELLED:
+        return {
+          title: 'Order Cancelled',
+          message: `Order ${orderRef} was cancelled.`,
+        };
+      case EventType.PAYMENT_RECEIVED:
+        return {
+          title: 'Payment Received',
+          message: `Payment for order ${orderRef} has been confirmed.`,
+        };
+      case EventType.PAYMENT_FAILED:
+        return {
+          title: 'Payment Failed',
+          message: `Payment for order ${orderRef} failed and needs attention.`,
+        };
+      default:
+        return {
+          title: 'Order Update',
+          message: `Order ${orderRef} has a new update.`,
+        };
+    }
+  }
+
+  switch (payload.eventType) {
+    case EventType.ORDER_CREATED:
+      return {
+        title: 'Order Placed',
+        message: restaurantName
+          ? `Your order ${orderRef} was sent to ${restaurantName}.`
+          : `Your order ${orderRef} was placed successfully.`,
+      };
+    case EventType.ORDER_CONFIRMED:
+      return {
+        title: 'Order Confirmed',
+        message: `The restaurant confirmed order ${orderRef}.`,
+      };
+    case EventType.ORDER_PREPARING:
+      return {
+        title: 'Being Prepared',
+        message: `The kitchen is preparing order ${orderRef}.`,
+      };
+    case EventType.ORDER_READY:
+      return {
+        title: 'Order Ready',
+        message: `Order ${orderRef} is ready for pickup or delivery.`,
+      };
+    case EventType.ORDER_OUT_FOR_DELIVERY:
+      return {
+        title: 'Out for Delivery',
+        message: `Order ${orderRef} is on its way.`,
+      };
+    case EventType.ORDER_DELIVERED:
+      return {
+        title: 'Order Delivered',
+        message: `Order ${orderRef} has been delivered. Enjoy!`,
+      };
+    case EventType.ORDER_CANCELLED:
+      return {
+        title: 'Order Cancelled',
+        message: `Order ${orderRef} was cancelled.`,
+      };
+    case EventType.PAYMENT_RECEIVED:
+      return {
+        title: 'Payment Confirmed',
+        message: `Payment for order ${orderRef} was received successfully.`,
+      };
+    case EventType.PAYMENT_FAILED:
+      return {
+        title: 'Payment Failed',
+        message: `Payment for order ${orderRef} failed. Please try again.`,
+      };
+    default:
+      return {
+        title: 'Order Update',
+        message: `Your order ${orderRef} has been updated.`,
+      };
+  }
+}
 
 @Injectable()
 export class NotificationsService {
@@ -26,11 +133,13 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) { }
 
   // Build a WS notification payload from an order event
-  buildFromOrderEvent(payload: OrderEventPayload): WsNotificationNew {
-    const { title, message } = EVENT_MESSAGES[payload.eventType] ?? {
-      title: 'Update',
-      message: 'Your order has been updated.',
-    };
+  async buildFromOrderEvent(payload: OrderEventPayload, recipientRole: RecipientRole): Promise<WsNotificationNew> {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: payload.restaurantId },
+      select: { name: true },
+    });
+
+    const { title, message } = buildRoleMessage(payload, recipientRole, restaurant?.name);
 
     let type: WsNotificationNew['type'] = 'ORDER_UPDATE';
     if (
@@ -58,8 +167,9 @@ export class NotificationsService {
   async createAndEmit(
     payload: OrderEventPayload,
     recipientId = payload.customerId,
+    recipientRole: RecipientRole = 'CUSTOMER',
   ): Promise<WsNotificationNew> {
-    const notification = this.buildFromOrderEvent(payload);
+    const notification = await this.buildFromOrderEvent(payload, recipientRole);
     const type = notification.type as NotificationType;
 
     try {

@@ -17,6 +17,7 @@ import { OrdersResolver } from './resolvers/orders.resolver';
     OrdersModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
+      path: '/api/graphql',
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: true,
       context: ({ req }) => ({ req }),

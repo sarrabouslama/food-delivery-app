@@ -5,13 +5,22 @@ import { OrderStatus, PaymentStatus, EventType } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderEventPayload } from 'src/contracts/events.types';
 import { OrderStateMachine } from './order-state.machine';
+const Stripe = require('stripe');
 
 @Injectable()
 export class OrdersService {
+  private stripe: any;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
-  ) { }
+  ) {
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    if (!secretKey) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is required');
+    }
+    this.stripe = new Stripe(secretKey);
+  }
 
   // ── Create Order ────────────────────────────────────────────
 
@@ -143,6 +152,7 @@ export class OrdersService {
   ): Promise<OrderEventPayload> {
     const order = await this.prisma.order.findUnique({
       where: { id },
+      include: { payment: true },
     });
     if (!order) throw new NotFoundException('Order not found');
 
@@ -182,7 +192,89 @@ export class OrdersService {
     // Emit using EventType as the event name
     this.eventEmitter.emit(eventType, payload);
 
+    if (toStatus === OrderStatus.DELIVERED && order.payment?.status !== PaymentStatus.PAID) {
+      const now = new Date();
+
+      await this.prisma.payment.update({
+        where: { orderId: order.id },
+        data: {
+          status: PaymentStatus.PAID,
+          paidAt: now,
+          stripePaymentId: order.payment?.stripePaymentId ?? null,
+        },
+      });
+
+      const paymentPayload: OrderEventPayload = {
+        eventType: EventType.PAYMENT_RECEIVED as any,
+        orderId: order.id,
+        customerId: order.customerId,
+        restaurantId: order.restaurantId,
+        fromStatus: toStatus as any,
+        toStatus: toStatus as any,
+        triggeredBy,
+        timestamp: now,
+        metadata: { autoPaid: true },
+      };
+
+      this.eventEmitter.emit(EventType.PAYMENT_RECEIVED, paymentPayload);
+    }
+
     return payload;
+  }
+
+  // ── Stripe Checkout Session ───────────────────────────────
+
+  async createStripeCheckoutSession(
+    orderId: string,
+    customerId: string,
+    successUrl: string,
+    cancelUrl: string,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        customer: true,
+        items: {
+          include: { menuItem: true },
+        },
+        payment: true,
+        restaurant: true,
+      },
+    });
+
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.customerId !== customerId) {
+      throw new ForbiddenException('You do not have permission to pay for this order');
+    }
+
+    const session = await this.stripe.checkout.sessions.create({
+      mode: 'payment',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      client_reference_id: order.id,
+      metadata: {
+        orderId: order.id,
+        restaurantId: order.restaurantId,
+      },
+      line_items: order.items.map((item) => ({
+        quantity: item.quantity,
+        price_data: {
+          currency: 'usd',
+          unit_amount: Math.round(Number(item.unitPrice) * 100),
+          product_data: {
+            name: item.menuItem.name,
+            description: item.menuItem.description ?? undefined,
+          },
+        },
+      })),
+    });
+
+    return {
+      ok: true,
+      sessionId: session.id,
+      url: session.url,
+      orderId: order.id,
+    };
   }
 
   // ── Payment Webhook Handler ─────────────────────────────────

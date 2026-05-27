@@ -205,6 +205,23 @@ export class RestaurantsService {
     });
   }
 
+  async findUncategorizedMenuItems(restaurantId: string) {
+    // Check if restaurant exists
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    return this.prisma.menuItem.findMany({
+      where: {
+        restaurantId,
+        categoryId: null,
+      },
+    });
+  }
+
   async updateMenuItem(id: string, ownerId: string, dto: UpdateMenuItemDto) {
     const menuItem = await this.prisma.menuItem.findUnique({
       where: { id },

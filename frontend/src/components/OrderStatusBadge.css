@@ -1,0 +1,79 @@
+.order-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.62rem 0.95rem;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.order-badge--sm {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.68rem;
+}
+
+.order-badge--lg {
+  padding: 0.75rem 1.1rem;
+  font-size: 0.84rem;
+}
+
+.order-badge__icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+.order-badge__svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.badge--pending {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.12), rgba(14, 165, 233, 0.12));
+  color: #1d4ed8;
+}
+
+.badge--confirmed {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.12), rgba(15, 157, 116, 0.12));
+  color: #1e40af;
+}
+
+.badge--preparing {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(29, 78, 216, 0.12));
+  color: #0f62fe;
+}
+
+.badge--ready {
+  background: linear-gradient(135deg, rgba(15, 157, 116, 0.12), rgba(34, 197, 94, 0.12));
+  color: #0f9d74;
+}
+
+.badge--delivery {
+  background: linear-gradient(135deg, rgba(15, 157, 116, 0.14), rgba(29, 78, 216, 0.12));
+  color: #0f766e;
+}
+
+.badge--delivered {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(15, 157, 116, 0.14));
+  color: #0f9d74;
+}
+
+.badge--cancelled {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(239, 68, 68, 0.12));
+  color: #b91c1c;
+}
+
+.badge--default {
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.12), rgba(148, 163, 184, 0.12));
+  color: #64748b;
+}

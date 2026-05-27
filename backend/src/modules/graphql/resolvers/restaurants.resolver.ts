@@ -24,6 +24,6 @@ export class RestaurantsResolver {
 
   @ResolveField(() => [MenuItemGql])
   async menuItems(@Parent() restaurant: RestaurantGql) {
-    return this.restaurantsService.findAllMenuItems(restaurant.id);
+    return this.restaurantsService.findUncategorizedMenuItems(restaurant.id);
   }
 }

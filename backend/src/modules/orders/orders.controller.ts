@@ -15,6 +15,11 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+interface StripeCheckoutDto {
+  successUrl: string;
+  cancelUrl: string;
+}
+
 interface UpdateStatusDto {
   status: OrderStatus;
   triggeredBy?: string;
@@ -28,6 +33,16 @@ export class OrdersController {
   @RequireCustomer()
   async create(@CurrentUser() user: any, @Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.createOrder(user.sub, createOrderDto);
+  }
+
+  @Post(':id/stripe-checkout')
+  @RequireCustomer()
+  async createStripeCheckout(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() body: StripeCheckoutDto,
+  ) {
+    return this.ordersService.createStripeCheckoutSession(id, user.sub, body.successUrl, body.cancelUrl);
   }
 
   @Get()

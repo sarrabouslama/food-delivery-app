@@ -2,11 +2,13 @@ import { NestFactory }                from '@nestjs/core';
 import { ValidationPipe, Logger }    from '@nestjs/common';
 import { IoAdapter }                 from '@nestjs/platform-socket.io';
 import { AppModule }                 from './app.module';
-import { json, raw } from 'express';
+import { json, raw, urlencoded } from 'express';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app    = await NestFactory.create(AppModule);
+  const app    = await NestFactory.create(AppModule, {
+    bodyParser: false,
+  });
 
   // ── CORS ──────────────────────────────────────────────────
   app.enableCors({
@@ -14,9 +16,12 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Configure raw body parser for Stripe webhook verification
-  // Stripe signature verification requires the raw request body (bytes)
-  app.use('/webhooks/payment', raw({ type: 'application/json' }));
+  // Configure larger request parsers for base64 image payloads and forms.
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
+
+  // Stripe signature verification requires the raw request body (bytes).
+  app.use('/api/webhooks/payment', raw({ type: 'application/json', limit: '10mb' }));
 
   // ── Global validation pipe ────────────────────────────────
   // Strips unknown fields and validates all incoming DTOs

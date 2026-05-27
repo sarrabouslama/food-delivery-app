@@ -1,0 +1,111 @@
+.filters-bar {
+  display: flex;
+  gap: var(--spacing-4);
+  padding: 1rem;
+  align-items: center;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.search-input {
+  flex: 2;
+}
+
+.category-select {
+  flex: 1;
+  background-color: #fff;
+  color: var(--color-text);
+}
+
+.restaurants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-6);
+}
+
+.restaurant-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  padding: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  position: relative;
+}
+
+.restaurant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.restaurant-card .restaurant-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.restaurant-card .restaurant-header h3 {
+  font-size: 1.1rem;
+}
+
+.restaurant-card .text-sm {
+  color: var(--color-text-muted);
+}
+
+.restaurant-image {
+  height: 200px;
+  position: relative;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.08), rgba(15, 157, 116, 0.08));
+}
+
+.restaurant-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  opacity: 0.55;
+}
+
+.closed-badge {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  background: linear-gradient(135deg, var(--color-danger), #ef4444);
+  color: #fff;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.restaurant-details {
+  padding: 1rem 1rem 1.1rem;
+}
+
+.restaurant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-1);
+}
+
+.restaurant-header h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.rating {
+  font-weight: 800;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
