@@ -1,73 +1,97 @@
-# React + TypeScript + Vite
+# Zest — Food Delivery Frontend (Member 6)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Vite + React + TypeScript frontend for the food delivery app.
+Aurora aesthetic: soft blue / pink / purple glassmorphism theme.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd frontend
+npm install
+cp .env.example .env.local
+npm run dev
+# → http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Use the **"Continue with Demo"** button on the login page to skip auth.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Pages & Routes
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/login` | Login | JWT auth, demo shortcut |
+| `/register` | Register | Customer or restaurant role |
+| `/dashboard` | Dashboard | Stats, recent orders, quick picks |
+| `/restaurants` | Browse | Search, filter, sort restaurants |
+| `/restaurants/:id` | Detail | Menu + cart + checkout |
+| `/orders` | History | All orders with status filter |
+| `/track/:orderId` | Live Tracking | WebSocket progress + SSE audit log |
+
+---
+
+## Architecture
+
 ```
+src/
+├── context/
+│   ├── AuthContext.tsx      ← JWT auth (Member 1 integration)
+│   └── ToastContext.tsx     ← Global toast notifications
+├── hooks/
+│   ├── useWebSocket.ts      ← Live order updates (Member 4 integration)
+│   └── useSSE.ts            ← Audit log stream (Member 5 integration)
+├── services/
+│   └── graphql.ts           ← GraphQL queries (Member 2 integration)
+├── pages/
+│   ├── AuthPages.tsx        ← Login + Register
+│   ├── DashboardPage.tsx
+│   ├── RestaurantsPage.tsx
+│   ├── RestaurantDetailPage.tsx
+│   ├── OrderHistoryPage.tsx
+│   └── OrderTrackingPage.tsx
+├── components/
+│   └── Sidebar.tsx
+├── App.tsx                  ← Router + protected routes
+└── index.css                ← Aurora design system
+```
+
+---
+
+## Integration Guide
+
+All mock flags are in `.env.local`. Switch `VITE_USE_MOCK=false` and set the real URLs when each member's backend is ready.
+
+### Member 1 (Auth)
+`AuthContext.tsx` calls `POST /auth/login` and `POST /auth/register`.
+Update `VITE_API_URL` to point to their server.
+
+### Member 2 (CRUD / GraphQL)
+`graphql.ts` has ready-made queries for restaurants, menus, orders.
+Update `VITE_GRAPHQL_URL`.
+
+### Member 4 (WebSocket)
+`useWebSocket.ts` — set `useMock: false` in `OrderTrackingPage.tsx` and update `VITE_WS_URL`.
+Expected event format:
+```json
+{ "orderId": "...", "status": "preparing", "message": "...", "timestamp": "..." }
+```
+
+### Member 5 (SSE / Audit)
+`useSSE.ts` — set `useMock: false` and update `VITE_SSE_URL`.
+Expected SSE data format:
+```json
+{ "id": "...", "orderId": "...", "action": "ORDER_CREATED", "actor": "...", "actorRole": "system", "details": "...", "timestamp": "..." }
+```
+
+---
+
+## Build for Production
+
+```bash
+npm run build
+# Output in dist/
+npm run preview  # preview the build locally
+```
+
+For deployment: serve the `dist/` folder from any static host (Vercel, Netlify, nginx).

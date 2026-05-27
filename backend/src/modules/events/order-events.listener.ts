@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { EventType, OrderStatus } from '@prisma/client';
-
+import { OrderStatus } from 'src/contracts/models.types';
+import { EventType } from 'src/contracts/events.types';
 import { AuditService } from '../audit/audit.service';
 import { SseService } from '../sse/sse.service';
 

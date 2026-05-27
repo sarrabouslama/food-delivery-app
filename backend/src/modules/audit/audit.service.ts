@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, EventType, OrderStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+
+export type EventType = 'ORDER_CREATED' | 'ORDER_CONFIRMED' | 'ORDER_PREPARING' | 'ORDER_READY' | 'ORDER_OUT_FOR_DELIVERY' | 'ORDER_DELIVERED' | 'ORDER_CANCELLED' | 'PAYMENT_RECEIVED' | 'PAYMENT_FAILED';
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
 
 export interface LogEventInput {
   orderId: string;
@@ -17,7 +19,7 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async logEvent(data: LogEventInput) {
-    const where: Prisma.AuditLogWhereInput = {
+    const where = {
       orderId: data.orderId,
       eventType: data.eventType,
       triggeredBy: data.triggeredBy,
@@ -26,7 +28,7 @@ export class AuditService {
     };
 
     const existing = await this.prisma.auditLog.findFirst({
-      where,
+      where: where as any,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -41,10 +43,7 @@ export class AuditService {
         fromStatus: data.fromStatus ?? null,
         toStatus: data.toStatus ?? null,
         triggeredBy: data.triggeredBy,
-        metadata:
-          data.metadata === undefined
-            ? undefined
-            : (data.metadata as Prisma.InputJsonValue),
+        metadata: data.metadata ?? undefined,
       },
     });
   }
