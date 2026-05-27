@@ -5,9 +5,10 @@ import { join } from 'path';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
-import { OrdersModule } from '../../orders/orders.module';
+import { OrdersModule } from '../orders/orders.module';
 import { RestaurantsResolver } from './resolvers/restaurants.resolver';
 import { OrdersResolver } from './resolvers/orders.resolver';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -24,4 +25,4 @@ import { OrdersResolver } from './resolvers/orders.resolver';
   ],
   providers: [RestaurantsResolver, OrdersResolver],
 })
-export class AppGraphQLModule {}
+export class AppGraphQLModule { }

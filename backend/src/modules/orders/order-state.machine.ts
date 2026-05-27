@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
-import { OrderStatus } from '../contracts/models.types';
-import { EventType } from '../contracts/events.types';
+import { OrderStatus } from '../../contracts/models.types';
+import { EventType } from '../../contracts/events.types';
 
 export class OrderStateMachine {
   private static transitions: Record<OrderStatus, OrderStatus[]> = {

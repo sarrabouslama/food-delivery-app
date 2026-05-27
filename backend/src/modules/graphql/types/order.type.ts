@@ -6,22 +6,22 @@ import { UserGql } from './user.type';
 @ObjectType()
 export class OrderItemGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  orderId: string;
+  orderId!: string;
 
   @Field()
-  menuItemId: string;
+  menuItemId!: string;
 
   @Field(() => Float)
-  unitPrice: number;
+  unitPrice!: number;
 
   @Field(() => Float)
-  subtotal: number;
+  subtotal!: number;
 
   @Field()
-  quantity: number;
+  quantity!: number;
 
   @Field(() => MenuItemGql, { nullable: true })
   menuItem?: MenuItemGql;
@@ -30,16 +30,16 @@ export class OrderItemGql {
 @ObjectType()
 export class PaymentGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  orderId: string;
+  orderId!: string;
 
   @Field(() => Float)
-  amount: number;
+  amount!: number;
 
   @Field()
-  status: string;
+  status!: string;
 
   @Field({ nullable: true })
   stripePaymentId?: string;
@@ -51,13 +51,13 @@ export class PaymentGql {
 @ObjectType()
 export class AuditLogGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  orderId: string;
+  orderId!: string;
 
   @Field()
-  eventType: string;
+  eventType!: string;
 
   @Field({ nullable: true })
   fromStatus?: string;
@@ -66,37 +66,37 @@ export class AuditLogGql {
   toStatus?: string;
 
   @Field()
-  triggeredBy: string;
+  triggeredBy!: string;
 
   @Field()
-  createdAt: Date;
+  createdAt!: Date;
 }
 
 @ObjectType()
 export class OrderGql {
   @Field(() => ID)
-  id: string;
+  id!: string;
 
   @Field()
-  customerId: string;
+  customerId!: string;
 
   @Field()
-  restaurantId: string;
+  restaurantId!: string;
 
   @Field()
-  status: string;
+  status!: string;
 
   @Field(() => Float)
-  totalPrice: number;
+  totalPrice!: number;
 
   @Field({ nullable: true })
   notes?: string;
 
   @Field()
-  address: string;
+  address!: string;
 
   @Field(() => [OrderItemGql])
-  items: OrderItemGql[];
+  items!: OrderItemGql[];
 
   @Field(() => PaymentGql, { nullable: true })
   payment?: PaymentGql;
@@ -111,8 +111,8 @@ export class OrderGql {
   customer?: UserGql;
 
   @Field()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Field()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

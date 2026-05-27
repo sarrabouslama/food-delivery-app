@@ -4,21 +4,21 @@ import { Type } from 'class-transformer';
 export class OrderItemDto {
   @IsUUID()
   @IsNotEmpty()
-  menuItemId: string;
+  menuItemId!: string;
 
   @IsInt()
   @Min(1)
-  quantity: number;
+  quantity!: number;
 }
 
 export class CreateOrderDto {
   @IsUUID()
   @IsNotEmpty()
-  restaurantId: string;
+  restaurantId!: string;
 
   @IsString()
   @IsNotEmpty()
-  address: string;
+  address!: string;
 
   @IsString()
   @IsOptional()
@@ -27,5 +27,5 @@ export class CreateOrderDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)
-  items: OrderItemDto[];
+  items!: OrderItemDto[];
 }

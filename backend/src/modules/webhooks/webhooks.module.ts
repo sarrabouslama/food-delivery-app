@@ -6,4 +6,4 @@ import { OrdersModule } from '../orders/orders.module';
   imports: [OrdersModule],
   controllers: [WebhooksController],
 })
-export class WebhooksModule {}
+export class WebhooksModule { }

@@ -1,7 +1,7 @@
 import { PrismaClient, Role, OrderStatus, PaymentStatus, EventType } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
 import { mockCustomer, mockRestaurantOwner } from '../src/contracts/mocks/mock-user';
 import { mockRestaurant, mockCategory, mockMenuItems, mockOrder } from '../src/contracts/mocks/mock-order';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 

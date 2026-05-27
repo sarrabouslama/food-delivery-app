@@ -1,9 +1,9 @@
 import { Resolver, Query, Args } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
-import { OrdersService } from '../../../orders/orders.service';
 import { OrderGql } from '../types/order.type';
 import { GqlJwtAuthGuard } from '../guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { OrdersService } from 'src/modules/orders/orders.service';
 
 @Resolver(() => OrderGql)
 @UseGuards(GqlJwtAuthGuard)

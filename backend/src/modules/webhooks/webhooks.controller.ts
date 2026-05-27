@@ -6,8 +6,8 @@ import {
   HttpCode,
   Post,
 } from '@nestjs/common';
-const Stripe = require('stripe');
 import { OrdersService } from '../orders/orders.service';
+const Stripe = require('stripe');
 
 @Controller('webhooks')
 export class WebhooksController {
@@ -39,8 +39,8 @@ export class WebhooksController {
     const rawBody = Buffer.isBuffer(body)
       ? body.toString('utf8')
       : typeof body === 'string'
-      ? body
-      : JSON.stringify(body);
+        ? body
+        : JSON.stringify(body);
 
     try {
       event = this.stripe.webhooks.constructEvent(
@@ -48,9 +48,10 @@ export class WebhooksController {
         sig,
         webhookSecret,
       );
-    } catch (err) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       throw new BadRequestException(
-        `Webhook signature verification failed: ${err.message}`,
+        `Webhook signature verification failed: ${message}`,
       );
     }
 

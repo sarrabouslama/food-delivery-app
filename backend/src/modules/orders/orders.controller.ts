@@ -8,12 +8,12 @@ import {
   Get,
   UseGuards,
 } from '@nestjs/common';
-import { OrdersService } from './orders.service';
 import { OrderStatus } from '@prisma/client';
+import { OrdersService } from './orders.service';
+import { RequireCustomer } from '../auth/decorators/require-role.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { JwtAuthGuard } from '../modules/auth/guards/jwt-auth.guard';
-import { RequireCustomer } from '../modules/auth/decorators/require-role.decorator';
-import { CurrentUser } from '../modules/auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 interface UpdateStatusDto {
   status: OrderStatus;
@@ -22,7 +22,7 @@ interface UpdateStatusDto {
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
   @RequireCustomer()

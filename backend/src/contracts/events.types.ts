@@ -12,7 +12,7 @@ export enum EventType {
   PAYMENT_FAILED = 'PAYMENT_FAILED',
 }
 
-export enum PayementType {
+export enum PaymentType {
   SUCCEEDED = 'SUCCEEDED',
   FAILED = 'FAILED',
 }
@@ -35,7 +35,7 @@ export interface OrderEventPayload {
 export interface PaymentWebhookDto {
   stripePaymentId: string;
   orderId: string;
-  status: PayementType;
+  status: PaymentType;
   amount: number;
   timestamp: string; // ISO string from Stripe
 }
