@@ -13,7 +13,7 @@ const NAV = [
 const Logo = () => (
   <div style={{ padding: '4px 8px 20px', borderBottom: '1px solid rgba(107,143,255,0.12)', marginBottom: 8 }}>
     <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
-      zest<span style={{ color: 'var(--soft-purple)' }}>.</span>
+      MataamGo<span style={{ color: 'var(--soft-purple)' }}>.</span>
     </span>
   </div>
 );

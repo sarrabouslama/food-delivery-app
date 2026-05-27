@@ -42,7 +42,6 @@ export interface Restaurant {
   reviewCount: number;
   deliveryTime: number;
   deliveryFee: number;
-  minimumOrder: number;
   isOpen: boolean;
   address: string;
   menu?: MenuItem[];
@@ -87,7 +86,6 @@ function transformRestaurant(r: Record<string, unknown>): Restaurant {
     reviewCount: 0,
     deliveryTime: 30,
     deliveryFee: 2.0,
-    minimumOrder: 10,
     isOpen: r.isOpen as boolean,
     address: (r.address as string) || '',
   };
@@ -174,7 +172,7 @@ export const getRestaurant = async (id: string): Promise<{ restaurant: Restauran
       },
     };
   } catch {
-    const mock = MOCK_RESTAURANTS.find(r => r.id === id) || MOCK_RESTAURANTS[0];
+    const mock = MOCK_RESTAURANTS.find(r => r.id === id) || { ...MOCK_RESTAURANTS[0], id };
     return { restaurant: { ...mock, menu: MOCK_MENU } };
   }
 };
@@ -265,12 +263,12 @@ export const getDashboardStats = async (): Promise<{ dashboardStats: DashboardSt
 // have real data in the database. This mock data is only used when the backend is unreachable.
 
 export const MOCK_RESTAURANTS: Restaurant[] = [
-  { id: '1', name: 'Bella Italia', description: 'Authentic Italian cuisine', cuisine: 'Italian', rating: 4.8, reviewCount: 324, deliveryTime: 25, deliveryFee: 1.99, minimumOrder: 15, isOpen: true, address: '12 Via Roma', imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80' },
-  { id: '2', name: 'Sushi Zen', description: 'Fresh Japanese sushi & rolls', cuisine: 'Japanese', rating: 4.6, reviewCount: 189, deliveryTime: 35, deliveryFee: 2.49, minimumOrder: 20, isOpen: true, address: '88 Sakura St', imageUrl: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&q=80' },
-  { id: '3', name: 'The Burger Lab', description: 'Gourmet smash burgers', cuisine: 'American', rating: 4.7, reviewCount: 512, deliveryTime: 20, deliveryFee: 0.99, minimumOrder: 12, isOpen: true, address: '5 Liberty Ave', imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80' },
-  { id: '4', name: 'Spice Garden', description: 'Authentic Indian flavors', cuisine: 'Indian', rating: 4.5, reviewCount: 276, deliveryTime: 30, deliveryFee: 1.49, minimumOrder: 18, isOpen: false, address: '23 Curry Lane', imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80' },
-  { id: '5', name: 'Green Bowl', description: 'Healthy salads & bowls', cuisine: 'Healthy', rating: 4.4, reviewCount: 143, deliveryTime: 15, deliveryFee: 1.99, minimumOrder: 14, isOpen: true, address: '7 Garden Way', imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80' },
-  { id: '6', name: 'Dragon Palace', description: 'Traditional Chinese dim sum', cuisine: 'Chinese', rating: 4.3, reviewCount: 98, deliveryTime: 40, deliveryFee: 2.99, minimumOrder: 25, isOpen: true, address: '44 Eastern Blvd', imageUrl: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80' },
+  { id: '1', name: 'Bella Italia', description: 'Authentic Italian cuisine', cuisine: 'Italian', rating: 4.8, reviewCount: 324, deliveryTime: 25, deliveryFee: 1.99, isOpen: true, address: '12 Via Roma', imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80' },
+  { id: '2', name: 'Sushi Zen', description: 'Fresh Japanese sushi & rolls', cuisine: 'Japanese', rating: 4.6, reviewCount: 189, deliveryTime: 35, deliveryFee: 2.49, isOpen: true, address: '88 Sakura St', imageUrl: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&q=80' },
+  { id: '3', name: 'The Burger Lab', description: 'Gourmet smash burgers', cuisine: 'American', rating: 4.7, reviewCount: 512, deliveryTime: 20, deliveryFee: 0.99, isOpen: true, address: '5 Liberty Ave', imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80' },
+  { id: '4', name: 'Spice Garden', description: 'Authentic Indian flavors', cuisine: 'Indian', rating: 4.5, reviewCount: 276, deliveryTime: 30, deliveryFee: 1.49, isOpen: false, address: '23 Curry Lane', imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80' },
+  { id: '5', name: 'Green Bowl', description: 'Healthy salads & bowls', cuisine: 'Healthy', rating: 4.4, reviewCount: 143, deliveryTime: 15, deliveryFee: 1.99, isOpen: true, address: '7 Garden Way', imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80' },
+  { id: '6', name: 'Dragon Palace', description: 'Traditional Chinese dim sum', cuisine: 'Chinese', rating: 4.3, reviewCount: 98, deliveryTime: 40, deliveryFee: 2.99, isOpen: true, address: '44 Eastern Blvd', imageUrl: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80' },
 ];
 
 export const MOCK_MENU: MenuItem[] = [

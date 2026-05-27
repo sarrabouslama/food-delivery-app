@@ -104,8 +104,6 @@ export const RestaurantDetailPage: React.FC = () => {
     );
   }
 
-  const minimumOrder = restaurant.minimumOrder;
-
   return (
     <div className="page-layout">
       <Sidebar />
@@ -252,15 +250,10 @@ export const RestaurantDetailPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18, fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>
               <span>Total</span><span>{(cartTotal + restaurant.deliveryFee).toFixed(2)} TND</span>
             </div>
-            {cartTotal < minimumOrder && (
-              <p style={{ fontSize: 12, color: 'var(--soft-pink)', marginBottom: 10, textAlign: 'center' }}>
-                Add {(minimumOrder - cartTotal).toFixed(2)} TND more to meet the minimum order
-              </p>
-            )}
             <button
               className="btn btn-primary"
-              style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, opacity: (cartTotal < minimumOrder || checkoutLoading) ? 0.6 : 1 }}
-              disabled={cartTotal < minimumOrder || checkoutLoading}
+              style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, opacity: checkoutLoading ? 0.6 : 1 }}
+              disabled={checkoutLoading}
               onClick={handleCheckout}
             >
               {checkoutLoading ? 'Placing order…' : 'Place Order →'}
