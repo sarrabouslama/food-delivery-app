@@ -57,6 +57,24 @@ export class RestaurantsService {
     });
   }
 
+  async findRestaurantByOwner(ownerId: string) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { ownerId },
+      include: {
+        categories: {
+          include: { menuItems: true },
+        },
+        menuItems: {
+          where: { categoryId: null },
+        },
+      },
+    });
+    if (!restaurant) {
+      throw new NotFoundException('No restaurant found for this account');
+    }
+    return restaurant;
+  }
+
   async findRestaurantById(id: string) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id },

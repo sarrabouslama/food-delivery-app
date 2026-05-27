@@ -4,7 +4,7 @@ import { EventType } from '../../contracts/events.types';
 
 export class OrderStateMachine {
   private static transitions: Record<OrderStatus, OrderStatus[]> = {
-    PENDING: [OrderStatus.CONFIRMED],
+    PENDING: [OrderStatus.CONFIRMED, OrderStatus.PREPARING],
     CONFIRMED: [OrderStatus.PREPARING],
     PREPARING: [OrderStatus.READY],
     READY: [OrderStatus.OUT_FOR_DELIVERY],

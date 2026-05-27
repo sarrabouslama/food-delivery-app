@@ -35,6 +35,12 @@ export class RestaurantsController {
     return this.restaurantsService.findAllRestaurants();
   }
 
+  @Get('mine')
+  @RequireRestaurant()
+  findMine(@CurrentUser() user: any) {
+    return this.restaurantsService.findRestaurantByOwner(user.sub);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.restaurantsService.findRestaurantById(id);
