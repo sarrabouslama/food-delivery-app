@@ -4,6 +4,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuditModule } from './modules/audit/audit.module';
+import { SseModule } from './modules/sse/sse.module';
+import { OrderEventsListener } from './modules/events/order-events.listener';
 import jwtConfig from './config/jwt.config';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -25,6 +28,8 @@ import { AppGraphQLModule } from './modules/graphql/graphql.module';
     PrismaModule,
     AuthModule,
     UsersModule,
+    AuditModule,
+    SseModule,
     RestaurantsModule,
     OrdersModule, 
     WebhooksModule,
@@ -32,6 +37,6 @@ import { AppGraphQLModule } from './modules/graphql/graphql.module';
   ],
 
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, OrderEventsListener],
 })
 export class AppModule {}
