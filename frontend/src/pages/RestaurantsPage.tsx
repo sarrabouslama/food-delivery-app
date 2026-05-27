@@ -6,11 +6,12 @@ import { getRestaurants, type Restaurant } from '../services/graphql';
 import { Clock, Search, UtensilsCrossed } from 'lucide-react';
 
 const RestaurantCard: React.FC<{ restaurant: Restaurant }> = ({ restaurant: r }) => (
-  <Link to={`/restaurants/${r.id}`} style={{ textDecoration: 'none' }}>
+  <Link to={`/restaurants/${r.id}`} style={{ textDecoration: 'none', opacity: r.isOpen ? 1 : 0.6, pointerEvents: r.isOpen ? 'auto' : 'none' }}>
     <div
       className="glass-card"
-      style={{ overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', height: '100%' }}
+      style={{ overflow: 'hidden', cursor: r.isOpen ? 'pointer' : 'default', transition: 'transform 0.2s, box-shadow 0.2s', height: '100%' }}
       onMouseEnter={e => {
+        if (!r.isOpen) return;
         e.currentTarget.style.transform = 'translateY(-4px)';
         e.currentTarget.style.boxShadow = '0 16px 48px rgba(99,88,200,0.18)';
       }}

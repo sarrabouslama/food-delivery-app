@@ -46,7 +46,7 @@ interface MenuItemFormProps {
 const MenuItemForm: React.FC<MenuItemFormProps> = ({ restaurantId, categories, item, onSave, onClose }) => {
   const [name, setName]         = useState(item?.name ?? '');
   const [desc, setDesc]         = useState(item?.description ?? '');
-  const [price, setPrice]       = useState(item ? String(item.price) : '');
+  const [price, setPrice]       = useState(item ? String(Number(item.price)) : '');
   const [imgUrl, setImgUrl]     = useState(item?.imageUrl ?? '');
   const [catId, setCatId]       = useState(item?.categoryId ?? '');
   const [available, setAvail]   = useState(item?.isAvailable ?? true);
@@ -469,7 +469,7 @@ export const ManageRestaurantPage: React.FC = () => {
                           <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2 }}>{item.name}</p>
                           {item.description && <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.description}</p>}
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: '#991b1b', flexShrink: 0 }}>{item.price.toFixed(2)} TND</span>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#991b1b', flexShrink: 0 }}>{Number(item.price).toFixed(2)} TND</span>
 
                         {/* Availability toggle */}
                         <button

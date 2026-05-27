@@ -55,6 +55,22 @@ export class WebhooksController {
       );
     }
 
+    // Handle checkout.session.completed (Stripe hosted checkout)
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as any;
+      if (session.payment_status === 'paid') {
+        const result = await this.ordersService.handlePaymentWebhook({
+          stripePaymentId: session.payment_intent || session.id,
+          orderId: (session.metadata?.orderId as string) || 'unknown',
+          status: 'SUCCEEDED',
+          amount: (session.amount_total || 0) / 100,
+          timestamp: new Date(session.created * 1000).toISOString(),
+        });
+        return { ok: true, eventId: event.id, result };
+      }
+      return { ok: true, eventId: event.id, message: 'Session not paid yet' };
+    }
+
     // Handle charge.succeeded events
     if (event.type === 'charge.succeeded') {
       const charge = event.data.object as any;

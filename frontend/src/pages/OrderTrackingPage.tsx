@@ -301,8 +301,8 @@ export const OrderTrackingPage: React.FC = () => {
               )}
             </div>
 
-            {/* Pay Now card — shown when order needs payment */}
-            {(currentStatus === 'pending' || currentStatus === 'confirmed') && !isCancelled && (
+            {/* Pay Now card — customers only, when order needs payment */}
+            {isCustomer && (currentStatus === 'pending' || currentStatus === 'confirmed') && !isCancelled && (
               <div className="glass-card" style={{
                 padding: '22px 24px',
                 border: '1.5px solid rgba(220,38,38,0.22)',

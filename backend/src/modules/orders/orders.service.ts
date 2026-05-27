@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-require-imports */
+const Stripe = require('stripe');
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentStatus, EventType } from '@prisma/client';
@@ -16,12 +18,15 @@ export class OrdersService {
   // ── Create Order ────────────────────────────────────────────
 
   async createOrder(customerId: string, dto: CreateOrderDto) {
-    // 1. Verify restaurant exists
+    // 1. Verify restaurant exists and is open
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: dto.restaurantId },
     });
     if (!restaurant) {
       throw new NotFoundException('Restaurant not found');
+    }
+    if (!restaurant.isOpen) {
+      throw new BadRequestException('Restaurant is currently closed');
     }
 
     // 2. Load all menu items to calculate price and validate
@@ -294,6 +299,60 @@ export class OrdersService {
     }
 
     return [];
+  }
+
+  // ── Audit Log ───────────────────────────────────────────────
+
+  async getOrderAuditLogs(orderId: string, userId: string, role: string) {
+    await this.findOrderById(orderId, userId, role);
+    return this.prisma.auditLog.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  // ── Stripe Checkout ─────────────────────────────────────────
+
+  async createCheckoutSession(orderId: string, customerId: string): Promise<{ url: string }> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: { include: { menuItem: true } },
+        restaurant: true,
+      },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.customerId !== customerId) throw new ForbiddenException('Not your order');
+
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    if (!secretKey) throw new Error('STRIPE_SECRET_KEY is not configured');
+
+    const stripe = new Stripe(secretKey);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items: order.items.map((item: any) => ({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `${item.menuItem?.name ?? 'Item'}`,
+            description: `Price: ${Number(item.unitPrice).toFixed(2)} TND`,
+          },
+          unit_amount: Math.round(Number(item.unitPrice) * 100),
+        },
+        quantity: item.quantity,
+      })),
+      payment_intent_data: {
+        metadata: { orderId: order.id },
+      },
+      metadata: { orderId: order.id },
+      success_url: `${frontendUrl}/track/${order.id}?payment=success`,
+      cancel_url: `${frontendUrl}/track/${order.id}?payment=cancelled`,
+    });
+
+    return { url: session.url };
   }
 
   async findOrderById(id: string, userId: string, role: string) {

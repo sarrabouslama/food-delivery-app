@@ -35,7 +35,7 @@ export const RestaurantDetailPage: React.FC = () => {
   const filteredMenu = activeCategory === 'All' ? menu : menu.filter(i => i.category === activeCategory);
 
   const addToCart = (item: MenuItem) => {
-    if (!item.available) return;
+    if (!item.available || !restaurant?.isOpen) return;
     setCart(prev => {
       const existing = prev.find(c => c.id === item.id);
       if (existing) return prev.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
@@ -59,6 +59,10 @@ export const RestaurantDetailPage: React.FC = () => {
 
   const handleCheckout = async () => {
     if (cart.length === 0 || !restaurant) return;
+    if (!restaurant.isOpen) {
+      addToast('error', 'Restaurant is closed', 'This restaurant is not accepting orders right now.');
+      return;
+    }
     if (!deliveryAddress.trim()) {
       addToast('error', 'Delivery address required', 'Please enter where to deliver your order');
       return;

@@ -42,6 +42,18 @@ export class OrdersController {
     return this.ordersService.findOrderById(id, user.sub, user.role);
   }
 
+  @Get(':id/audit')
+  @UseGuards(JwtAuthGuard)
+  async getAuditLogs(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.getOrderAuditLogs(id, user.sub, user.role);
+  }
+
+  @Post(':id/checkout')
+  @UseGuards(JwtAuthGuard)
+  async checkout(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ordersService.createCheckoutSession(id, user.sub);
+  }
+
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard)
   async updateStatus(
