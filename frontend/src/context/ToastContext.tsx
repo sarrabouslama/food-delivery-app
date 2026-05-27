@@ -35,7 +35,7 @@ const icons: Record<ToastType, string> = {
 const colors: Record<ToastType, string> = {
   success: '#10b981',
   error: '#ef4444',
-  info: '#6b8fff',
+  info: '#e03131',
   warning: '#f59e0b',
 };
 

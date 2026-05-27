@@ -3,12 +3,15 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { DashboardPage } from './pages/DashboardPage';
 import { RestaurantsPage } from './pages/RestaurantsPage';
 import { RestaurantDetailPage } from './pages/RestaurantDetailPage';
 import { OrderHistoryPage } from './pages/OrderHistoryPage';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
+import { ManageRestaurantPage } from './pages/ManageRestaurantPage';
+import { ManageOrdersPage } from './pages/ManageOrdersPage';
 import './index.css';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -37,6 +40,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
       <Route path="/track" element={<ProtectedRoute><OrderTrackingPage /></ProtectedRoute>} />
       <Route path="/track/:orderId" element={<ProtectedRoute><OrderTrackingPage /></ProtectedRoute>} />
+      <Route path="/manage" element={<ProtectedRoute><ManageRestaurantPage /></ProtectedRoute>} />
+      <Route path="/manage/orders" element={<ProtectedRoute><ManageOrdersPage /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -47,7 +52,9 @@ const App: React.FC = () => (
   <BrowserRouter>
     <AuthProvider>
       <ToastProvider>
-        <AppRoutes />
+        <NotificationProvider>
+          <AppRoutes />
+        </NotificationProvider>
       </ToastProvider>
     </AuthProvider>
   </BrowserRouter>

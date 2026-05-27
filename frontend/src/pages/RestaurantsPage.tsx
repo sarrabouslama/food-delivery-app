@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { getRestaurants, type Restaurant } from '../services/graphql';
+import { Clock, Search, UtensilsCrossed } from 'lucide-react';
 
 const RestaurantCard: React.FC<{ restaurant: Restaurant }> = ({ restaurant: r }) => (
   <Link to={`/restaurants/${r.id}`} style={{ textDecoration: 'none' }}>
@@ -37,7 +38,7 @@ const RestaurantCard: React.FC<{ restaurant: Restaurant }> = ({ restaurant: r })
         {r.deliveryFee === 0 && (
           <div style={{
             position: 'absolute', top: 10, left: 10,
-            background: 'rgba(168,85,247,0.9)', color: '#fff',
+            background: 'rgba(153,27,27,0.90)', color: '#fff',
             fontSize: 11, fontWeight: 500, padding: '3px 9px', borderRadius: 100,
             backdropFilter: 'blur(8px)',
           }}>
@@ -58,9 +59,9 @@ const RestaurantCard: React.FC<{ restaurant: Restaurant }> = ({ restaurant: r })
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>{r.description}</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {r.cuisine && <span className="badge badge-purple">{r.cuisine}</span>}
-          <span className="badge badge-blue">⏱ {r.deliveryTime} min</span>
+          <span className="badge badge-blue" style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Clock size={10} /> {r.deliveryTime} min</span>
           <span className="badge badge-blue">
-            {r.deliveryFee === 0 ? '🎉 Free' : `${r.deliveryFee.toFixed(2)} TND delivery`}
+            {r.deliveryFee === 0 ? 'Free delivery' : `${r.deliveryFee.toFixed(2)} TND delivery`}
           </span>
         </div>
       </div>
@@ -108,7 +109,7 @@ export const RestaurantsPage: React.FC = () => {
         <div className="glass-card" style={{ padding: '18px 20px', marginBottom: 24 }}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px' }}>
-              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'var(--text-muted)' }}>🔍</span>
+              <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 type="text"
                 placeholder="Search restaurants or cuisine…"
@@ -138,8 +139,8 @@ export const RestaurantsPage: React.FC = () => {
                   padding: '6px 14px', fontSize: 13,
                   background: cuisine === c ? 'linear-gradient(135deg, var(--soft-blue), var(--soft-purple))' : 'rgba(255,255,255,0.5)',
                   color: cuisine === c ? '#fff' : 'var(--text-secondary)',
-                  border: cuisine === c ? 'none' : '1px solid rgba(107,143,255,0.2)',
-                  boxShadow: cuisine === c ? '0 2px 10px rgba(107,143,255,0.3)' : 'none',
+                  border: cuisine === c ? 'none' : '1px solid rgba(220,38,38,0.18)',
+                  boxShadow: cuisine === c ? '0 2px 10px rgba(220,38,38,0.25)' : 'none',
                 }}
               >
                 {c}
@@ -155,7 +156,7 @@ export const RestaurantsPage: React.FC = () => {
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-            <p style={{ fontSize: 48, marginBottom: 12 }}>🍽</p>
+            <UtensilsCrossed size={48} style={{ margin: '0 auto 16px', opacity: 0.25 }} />
             <p style={{ fontSize: 16 }}>No restaurants found</p>
             <p style={{ fontSize: 13 }}>Try adjusting your filters</p>
           </div>

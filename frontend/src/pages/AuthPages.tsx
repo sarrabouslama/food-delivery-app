@@ -26,7 +26,7 @@ const AuroraBackground = () => (
 const Logo = () => (
   <div className="flex flex-col items-center gap-1 mb-6">
     <span className="font-display font-light text-4xl tracking-tight text-[#1e1b4b]">
-      MataamGo<span className="text-[#a855f7]">.</span>
+      MataamGo<span className="text-[#991b1b]">.</span>
     </span>
     <p className="text-xs text-[#7c6fad] tracking-widest uppercase">food delivery, elevated</p>
   </div>
@@ -36,9 +36,9 @@ const Logo = () => (
 
 const Divider = ({ label }: { label: string }) => (
   <div className="relative flex items-center my-5">
-    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#a855f7]/20 to-transparent" />
+    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#991b1b]/20 to-transparent" />
     <span className="px-3 text-xs text-[#7c6fad]">{label}</span>
-    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#a855f7]/20 to-transparent" />
+    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#991b1b]/20 to-transparent" />
   </div>
 )
 
@@ -147,7 +147,7 @@ export const LoginPage: React.FC = () => {
 
             <p className="text-center text-sm text-[#7c6fad]">
               Don't have an account?{' '}
-              <Link to="/register" className="text-[#a855f7] font-medium hover:text-[#7c3aed] transition-colors underline underline-offset-2">
+              <Link to="/register" className="text-[#991b1b] font-medium hover:text-[#7f1d1d] transition-colors underline underline-offset-2">
                 Create one
               </Link>
             </p>
@@ -286,14 +286,14 @@ export const RegisterPage: React.FC = () => {
                       className={cn(
                         'relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 cursor-pointer',
                         role === value
-                          ? 'border-[#a855f7] bg-gradient-to-b from-[#a855f7]/10 to-[#6b8fff]/10 shadow-md shadow-violet-200'
-                          : 'border-white/40 bg-white/40 hover:border-[#a855f7]/40 hover:bg-white/60',
+                          ? 'border-[#991b1b] bg-gradient-to-b from-[#991b1b]/10 to-[#e03131]/10 shadow-md shadow-red-200'
+                          : 'border-white/40 bg-white/40 hover:border-[#991b1b]/40 hover:bg-white/60',
                       )}
                     >
                       <div className={cn(
                         'w-10 h-10 rounded-xl flex items-center justify-center transition-all',
                         role === value
-                          ? 'bg-gradient-to-br from-[#6b8fff] to-[#a855f7] text-white shadow-lg shadow-violet-300/40'
+                          ? 'bg-gradient-to-br from-[#e03131] to-[#991b1b] text-white shadow-lg shadow-red-300/40'
                           : 'bg-white/60 text-[#7c6fad]',
                       )}>
                         <Icon size={20} />
@@ -303,7 +303,7 @@ export const RegisterPage: React.FC = () => {
                         <p className="text-[10px] text-[#7c6fad]">{desc}</p>
                       </div>
                       {role === value && (
-                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#a855f7]" />
+                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#991b1b]" />
                       )}
                     </button>
                   ))}
@@ -331,7 +331,7 @@ export const RegisterPage: React.FC = () => {
 
             <p className="text-center text-sm text-[#7c6fad]">
               Already have an account?{' '}
-              <Link to="/login" className="text-[#a855f7] font-medium hover:text-[#7c3aed] transition-colors underline underline-offset-2">
+              <Link to="/login" className="text-[#991b1b] font-medium hover:text-[#7f1d1d] transition-colors underline underline-offset-2">
                 Sign in
               </Link>
             </p>

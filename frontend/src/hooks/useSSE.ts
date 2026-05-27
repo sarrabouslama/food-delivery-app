@@ -1,112 +1,107 @@
-// src/hooks/useSSE.ts
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 export interface AuditEvent {
   id: string;
   orderId: string;
-  action: string;
-  actor: string;
-  actorRole: 'customer' | 'restaurant' | 'driver' | 'system';
+  eventType: string;
+  fromStatus: string | null;
+  toStatus: string;
+  triggeredBy: string;
   timestamp: string;
-  details?: string;
-  metadata?: Record<string, unknown>;
 }
 
-interface UseSSEOptions {
-  url?: string;
-  orderId?: string;
-  useMock?: boolean;
+const EVENT_META: Record<string, { label: string; role: 'customer' | 'restaurant' | 'system' | 'driver' }> = {
+  ORDER_CREATED:          { label: 'Order Placed',        role: 'customer' },
+  ORDER_CONFIRMED:        { label: 'Order Confirmed',     role: 'restaurant' },
+  ORDER_PREPARING:        { label: 'Preparing',           role: 'restaurant' },
+  ORDER_READY:            { label: 'Ready for Pickup',    role: 'restaurant' },
+  ORDER_OUT_FOR_DELIVERY: { label: 'Out for Delivery',    role: 'driver' },
+  ORDER_DELIVERED:        { label: 'Delivered',           role: 'driver' },
+  ORDER_CANCELLED:        { label: 'Order Cancelled',     role: 'system' },
+  PAYMENT_RECEIVED:       { label: 'Payment Confirmed',   role: 'system' },
+  PAYMENT_FAILED:         { label: 'Payment Failed',      role: 'system' },
+};
+
+export function getEventMeta(eventType: string) {
+  return EVENT_META[eventType] ?? {
+    label: eventType.replace(/_/g, ' '),
+    role: 'system' as const,
+  };
 }
 
-const MOCK_AUDIT_EVENTS: Omit<AuditEvent, 'id' | 'timestamp'>[] = [
-  { orderId: '', action: 'ORDER_CREATED', actor: 'Customer', actorRole: 'customer', details: 'Order placed for 2 items - $24.50' },
-  { orderId: '', action: 'PAYMENT_PROCESSED', actor: 'Payment System', actorRole: 'system', details: 'Payment of $24.50 confirmed via card ending in 4242' },
-  { orderId: '', action: 'ORDER_CONFIRMED', actor: 'Bella Italia', actorRole: 'restaurant', details: 'Restaurant accepted the order' },
-  { orderId: '', action: 'PREPARATION_STARTED', actor: 'Bella Italia', actorRole: 'restaurant', details: 'Chef started preparing the order' },
-  { orderId: '', action: 'DRIVER_ASSIGNED', actor: 'System', actorRole: 'system', details: 'Driver Alex M. assigned to the order' },
-  { orderId: '', action: 'ORDER_PICKED_UP', actor: 'Alex M.', actorRole: 'driver', details: 'Driver picked up the order from restaurant' },
-  { orderId: '', action: 'ORDER_DELIVERED', actor: 'Alex M.', actorRole: 'driver', details: 'Order successfully delivered to customer' },
-];
-
-export function useSSE({ url, orderId, useMock = true }: UseSSEOptions) {
+// Uses fetch() instead of EventSource so we can send Authorization header
+export function useSSE({ orderId }: { orderId?: string }) {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [connected, setConnected] = useState(false);
-  const esRef = useRef<EventSource | null>(null);
-  const mockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mockIndexRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const addEvent = useCallback((event: AuditEvent) => {
-    setEvents(prev => [event, ...prev]);
-  }, []);
-
-  const startMock = useCallback(() => {
-    if (!orderId) return;
-    setConnected(true);
-    mockIndexRef.current = 0;
-
-    // Push first event immediately
-    addEvent({
-      id: `evt-0`,
-      ...MOCK_AUDIT_EVENTS[0],
-      orderId,
-      timestamp: new Date().toISOString(),
+  const addEvent = useCallback((ev: AuditEvent) => {
+    setEvents(prev => {
+      if (prev.some(e => e.id === ev.id)) return prev;
+      return [ev, ...prev];
     });
-
-    mockIntervalRef.current = setInterval(() => {
-      mockIndexRef.current += 1;
-      if (mockIndexRef.current >= MOCK_AUDIT_EVENTS.length) {
-        clearInterval(mockIntervalRef.current!);
-        setConnected(false);
-        return;
-      }
-      const template = MOCK_AUDIT_EVENTS[mockIndexRef.current];
-      addEvent({
-        id: `evt-${mockIndexRef.current}`,
-        ...template,
-        orderId,
-        timestamp: new Date().toISOString(),
-      });
-    }, 5500);
-  }, [orderId, addEvent]);
+  }, []);
 
   useEffect(() => {
     if (!orderId) return;
 
-    if (useMock) {
-      startMock();
-      return () => {
-        if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
-      };
-    }
+    const token = localStorage.getItem('access_token');
+    const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000/api';
+    const url = `${apiUrl}/sse/orders/${orderId}`;
 
-    const sseUrl = url || `http://localhost:3000/sse/audit?orderId=${orderId}`;
-    try {
-      const es = new EventSource(sseUrl, { withCredentials: true });
-      esRef.current = es;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-      es.onopen = () => setConnected(true);
-      es.onmessage = (e) => {
-        try {
-          const data: AuditEvent = JSON.parse(e.data);
-          addEvent(data);
-        } catch (err) {
-          console.error('SSE parse error', err);
+    (async () => {
+      try {
+        const res = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            Accept: 'text/event-stream',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (!res.ok || !res.body) return;
+        setConnected(true);
+
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = '';
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop() ?? '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const raw = JSON.parse(line.slice(6));
+              // NestJS SSE wraps payload as { data: eventPayload }
+              const p: Record<string, unknown> = (raw.data as Record<string, unknown>) ?? raw;
+              if (!p?.eventType) continue;
+              addEvent({
+                id: `${String(p.eventType)}-${String(p.timestamp ?? Date.now())}`,
+                orderId: (p.orderId as string) ?? orderId,
+                eventType: p.eventType as string,
+                fromStatus: (p.fromStatus as string | null) ?? null,
+                toStatus: (p.toStatus as string) ?? '',
+                triggeredBy: (p.triggeredBy as string) ?? 'system',
+                timestamp: (p.timestamp as string) ?? new Date().toISOString(),
+              });
+            } catch { /* ignore malformed lines */ }
+          }
         }
-      };
-      es.onerror = () => {
+      } catch (e) {
+        if ((e as Error)?.name !== 'AbortError') setConnected(false);
+      } finally {
         setConnected(false);
-        es.close();
-        startMock();
-      };
-    } catch {
-      startMock();
-    }
+      }
+    })();
 
-    return () => {
-      esRef.current?.close();
-      if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
-    };
-  }, [orderId, url, useMock, startMock]);
+    return () => { controller.abort(); };
+  }, [orderId, addEvent]);
 
   return { events, connected };
 }

@@ -1,7 +1,187 @@
 // src/services/graphql.ts
 
-const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:3000/graphql';
+const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL ?? 'http://localhost:3000/graphql';
 const REST_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+async function tryRefreshToken(): Promise<boolean> {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${REST_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json() as { accessToken: string; refreshToken: string };
+    localStorage.setItem('access_token', data.accessToken);
+    if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function restFetch<T>(path: string, options?: RequestInit, _retry = false): Promise<T> {
+  const token = localStorage.getItem('access_token');
+  const res = await fetch(`${REST_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {}),
+    },
+  });
+
+  if (res.status === 401 && !_retry) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) return restFetch<T>(path, options, true);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_info');
+    window.location.href = '/login';
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const msg = Array.isArray(err.message) ? (err.message as string[])[0] : String(err.message ?? `HTTP ${res.status}`);
+    throw new Error(msg);
+  }
+  return res.json() as Promise<T>;
+}
+
+// ─── Backend raw types for management ────────────────────────────────────────
+
+export interface BackendRestaurant {
+  id: string;
+  ownerId: string;
+  name: string;
+  description?: string;
+  category: string;
+  imageUrl?: string;
+  address: string;
+  phone?: string;
+  isOpen: boolean;
+  rating: number;
+  categories?: BackendCategory[];
+  menuItems?: BackendMenuItem[];
+}
+
+export interface BackendCategory {
+  id: string;
+  restaurantId: string;
+  name: string;
+  menuItems?: BackendMenuItem[];
+}
+
+export interface BackendMenuItem {
+  id: string;
+  restaurantId: string;
+  categoryId?: string;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+  isAvailable: boolean;
+}
+
+// ─── Management API ───────────────────────────────────────────────────────────
+
+export const getMyRestaurant = async (): Promise<BackendRestaurant | null> => {
+  try {
+    return await restFetch<BackendRestaurant>('/restaurants/mine');
+  } catch {
+    return null;
+  }
+};
+
+export const getRestaurantFull = async (id: string): Promise<BackendRestaurant | null> => {
+  try {
+    const r = await restFetch<BackendRestaurant>(`/restaurants/${id}`);
+    const categories = await restFetch<BackendCategory[]>(`/restaurants/${id}/categories`);
+    return { ...r, categories };
+  } catch {
+    return null;
+  }
+};
+
+export const createRestaurant = async (data: {
+  name: string; description?: string; category: string;
+  address: string; phone?: string; imageUrl?: string;
+}): Promise<BackendRestaurant> =>
+  restFetch<BackendRestaurant>('/restaurants', { method: 'POST', body: JSON.stringify(data) });
+
+export const updateRestaurant = async (id: string, data: Partial<{
+  name: string; description: string; category: string;
+  address: string; phone: string; imageUrl: string; isOpen: boolean;
+}>): Promise<BackendRestaurant> =>
+  restFetch<BackendRestaurant>(`/restaurants/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const createCategory = async (restaurantId: string, name: string): Promise<BackendCategory> =>
+  restFetch<BackendCategory>(`/restaurants/${restaurantId}/categories`, { method: 'POST', body: JSON.stringify({ name }) });
+
+export const deleteCategory = async (id: string): Promise<void> =>
+  restFetch<void>(`/restaurants/categories/${id}`, { method: 'DELETE' });
+
+export const createMenuItem = async (restaurantId: string, data: {
+  name: string; description?: string; price: number;
+  categoryId?: string; imageUrl?: string; isAvailable?: boolean;
+}): Promise<BackendMenuItem> =>
+  restFetch<BackendMenuItem>(`/restaurants/${restaurantId}/menu-items`, { method: 'POST', body: JSON.stringify(data) });
+
+export const updateMenuItem = async (_restaurantId: string, itemId: string, data: Partial<{
+  name: string; description: string; price: number;
+  categoryId: string; imageUrl: string; isAvailable: boolean;
+}>): Promise<BackendMenuItem> =>
+  restFetch<BackendMenuItem>(`/restaurants/menu-items/${itemId}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const deleteMenuItem = async (_restaurantId: string, itemId: string): Promise<void> =>
+  restFetch<void>(`/restaurants/menu-items/${itemId}`, { method: 'DELETE' });
+
+// Status values the backend accepts (uppercase)
+export type BackendOrderStatus =
+  | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+
+export const updateOrderStatus = async (orderId: string, status: BackendOrderStatus): Promise<void> =>
+  restFetch<void>(`/orders/${orderId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+
+export const createCheckoutSession = async (orderId: string): Promise<{ url: string }> =>
+  restFetch<{ url: string }>(`/orders/${orderId}/checkout`, { method: 'POST' });
+
+export interface AuditLogEntry {
+  id: string;
+  orderId: string;
+  eventType: string;
+  fromStatus: string | null;
+  toStatus: string;
+  triggeredBy: string;
+  createdAt: string;
+}
+
+export const getOrderAuditLogs = async (orderId: string): Promise<AuditLogEntry[]> => {
+  try {
+    return await restFetch<AuditLogEntry[]>(`/orders/${orderId}/audit`);
+  } catch {
+    return [];
+  }
+};
+
+export interface NotificationItem {
+  id: string;
+  type: 'ORDER_UPDATE' | 'PAYMENT' | 'SYSTEM';
+  title: string;
+  message: string;
+  timestamp: string;
+}
+
+export const getNotificationHistory = async (limit = 20): Promise<NotificationItem[]> => {
+  try {
+    return await restFetch<NotificationItem[]>(`/notifications?limit=${limit}`);
+  } catch {
+    return [];
+  }
+};
 
 async function gqlFetch<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
   const token = localStorage.getItem('access_token');
@@ -107,12 +287,18 @@ function transformMenuItem(
   };
 }
 
+const BACKEND_STATUS: Record<string, string> = {
+  pending: 'pending', confirmed: 'confirmed', preparing: 'preparing',
+  ready: 'ready', out_for_delivery: 'on_the_way', delivered: 'delivered', cancelled: 'cancelled',
+};
+
 function transformOrder(o: Record<string, unknown>): Order {
   const restaurant = o.restaurant as Record<string, unknown> | null;
   const items = (o.items as Array<Record<string, unknown>>) || [];
+  const rawStatus = typeof o.status === 'string' ? o.status.toLowerCase() : '';
   return {
     id: o.id as string,
-    status: typeof o.status === 'string' ? o.status.toLowerCase() : (o.status as string),
+    status: BACKEND_STATUS[rawStatus] ?? rawStatus,
     total: Number(o.totalPrice ?? o.total ?? 0),
     createdAt: o.createdAt as string,
     updatedAt: o.updatedAt as string,
@@ -145,7 +331,8 @@ export const getRestaurants = async (_category?: string): Promise<{ restaurants:
         }
       }
     `);
-    return { restaurants: data.restaurants.map(transformRestaurant) };
+    const list = data.restaurants.map(transformRestaurant);
+    return { restaurants: list.length > 0 ? list : MOCK_RESTAURANTS };
   } catch {
     return { restaurants: MOCK_RESTAURANTS };
   }
@@ -220,26 +407,15 @@ export const createOrder = async (input: {
   items: Array<{ menuItemId: string; quantity: number }>;
   deliveryAddress: string;
 }): Promise<{ createOrder: Order }> => {
-  const token = localStorage.getItem('access_token');
-  const res = await fetch(`${REST_URL}/orders`, {
+  const data = await restFetch<Record<string, unknown>>('/orders', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
     body: JSON.stringify({
       restaurantId: input.restaurantId,
       items: input.items,
       address: input.deliveryAddress,
     }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = Array.isArray(err.message) ? err.message[0] : err.message;
-    throw new Error(msg || 'Failed to place order');
-  }
-  const data = await res.json();
-  return { createOrder: transformOrder(data as Record<string, unknown>) };
+  return { createOrder: transformOrder(data) };
 };
 
 // ─── Dashboard stats (derived from orders) ───────────────────────────────────

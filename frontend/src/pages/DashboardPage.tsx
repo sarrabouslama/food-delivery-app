@@ -1,23 +1,24 @@
-// src/pages/DashboardPage.tsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { getMyOrders, getRestaurants, type Order, type Restaurant } from '../services/graphql';
+import { useNotifications } from '../context/NotificationContext';
+import { Package, RefreshCw, CreditCard, UtensilsCrossed, Inbox, MapPin, type LucideIcon } from 'lucide-react';
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   pending:     { label: 'Pending',     color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-  confirmed:   { label: 'Confirmed',   color: '#6b8fff', bg: 'rgba(107,143,255,0.1)' },
-  preparing:   { label: 'Preparing',   color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
+  confirmed:   { label: 'Confirmed',   color: '#e03131', bg: 'rgba(220,38,38,0.1)' },
+  preparing:   { label: 'Preparing',   color: '#991b1b', bg: 'rgba(153,27,27,0.1)' },
   ready:       { label: 'Ready',       color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  on_the_way:  { label: 'On the way',  color: '#6b8fff', bg: 'rgba(107,143,255,0.1)' },
+  on_the_way:  { label: 'On the way',  color: '#e03131', bg: 'rgba(220,38,38,0.1)' },
   delivered:   { label: 'Delivered',   color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   cancelled:   { label: 'Cancelled',   color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
 };
 
-const StatCard: React.FC<{ label: string; value: string | number; icon: string; accent: string }> = ({ label, value, icon, accent }) => (
+const StatCard: React.FC<{ label: string; value: string | number; Icon: LucideIcon; accent: string }> = ({ label, value, Icon, accent }) => (
   <div className="glass-card" style={{ padding: '20px 22px', position: 'relative', overflow: 'hidden' }}>
-    <div style={{ position: 'absolute', top: -16, right: -10, fontSize: 64, opacity: 0.06, lineHeight: 1 }}>{icon}</div>
+    <Icon size={56} style={{ position: 'absolute', top: -8, right: -8, opacity: 0.06, color: accent }} />
     <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{label}</p>
     <p style={{ fontSize: 28, fontWeight: 300, fontFamily: 'var(--font-display)', color: accent }}>{value}</p>
   </div>
@@ -35,6 +36,7 @@ function timeAgo(iso: string) {
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { notifications } = useNotifications();
   const [time, setTime] = useState(new Date());
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -50,6 +52,12 @@ export const DashboardPage: React.FC = () => {
     getMyOrders().then(d => setOrders(d.myOrders)).finally(() => setLoadingOrders(false));
     getRestaurants().then(d => setRestaurants(d.restaurants)).finally(() => setLoadingRestaurants(false));
   }, []);
+
+  // Refresh orders whenever a new notification arrives (order status changed)
+  useEffect(() => {
+    if (notifications.length === 0) return;
+    getMyOrders().then(d => setOrders(d.myOrders));
+  }, [notifications]);
 
   const greeting = () => {
     const h = time.getHours();
@@ -73,7 +81,7 @@ export const DashboardPage: React.FC = () => {
             {time.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           <h1 style={{ fontSize: '2rem' }}>
-            {greeting()}, {user?.name?.split(' ')[0] || 'there'} 👋
+            {greeting()}, {user?.name?.split(' ')[0] || 'there'}
           </h1>
           {isRestaurant && (
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>Restaurant dashboard — managing incoming orders</p>
@@ -82,10 +90,10 @@ export const DashboardPage: React.FC = () => {
 
         {/* Stat cards */}
         <div className="grid-4" style={{ marginBottom: 32 }}>
-          <StatCard label={isRestaurant ? 'Orders Received' : 'Total Orders'} value={loadingOrders ? '…' : orders.length} icon="📦" accent="var(--soft-blue)" />
-          <StatCard label="Active Orders" value={loadingOrders ? '…' : activeOrders.length} icon="🔄" accent="var(--soft-purple)" />
-          <StatCard label={isRestaurant ? 'Total Revenue' : 'Total Spent'} value={loadingOrders ? '…' : `${totalRevenue.toFixed(2)} TND`} icon="💳" accent="var(--soft-pink)" />
-          <StatCard label="Restaurants" value={loadingRestaurants ? '…' : restaurants.length} icon="🍽" accent="#10b981" />
+          <StatCard label={isRestaurant ? 'Orders Received' : 'Total Orders'} value={loadingOrders ? '…' : orders.length} Icon={Package} accent="var(--soft-blue)" />
+          <StatCard label="Active Orders" value={loadingOrders ? '…' : activeOrders.length} Icon={RefreshCw} accent="var(--soft-purple)" />
+          <StatCard label={isRestaurant ? 'Total Revenue' : 'Total Spent'} value={loadingOrders ? '…' : `${totalRevenue.toFixed(2)} TND`} Icon={CreditCard} accent="var(--soft-pink)" />
+          <StatCard label="Restaurants" value={loadingRestaurants ? '…' : restaurants.length} Icon={UtensilsCrossed} accent="#10b981" />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
@@ -105,7 +113,7 @@ export const DashboardPage: React.FC = () => {
               </div>
             ) : orders.length === 0 ? (
               <div className="glass-card" style={{ padding: '40px 24px', textAlign: 'center' }}>
-                <p style={{ fontSize: 40, marginBottom: 12 }}>📭</p>
+                <Inbox size={40} style={{ margin: '0 auto 12px', opacity: 0.25 }} />
                 <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>No orders yet</p>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
                   {isRestaurant ? 'Customers haven\'t placed any orders yet.' : 'Browse restaurants and place your first order!'}
@@ -125,7 +133,7 @@ export const DashboardPage: React.FC = () => {
                       <div className="glass-card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', transition: 'transform 0.18s' }}
                         onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
                         onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
-                        <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', overflow: 'hidden', flexShrink: 0, background: 'rgba(107,143,255,0.1)' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', overflow: 'hidden', flexShrink: 0, background: 'rgba(220,38,38,0.08)' }}>
                           {order.restaurant.imageUrl && (
                             <img src={order.restaurant.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           )}
@@ -187,18 +195,18 @@ export const DashboardPage: React.FC = () => {
             {activeOrders.length > 0 && (
               <div style={{ marginTop: isRestaurant ? 0 : 20 }}>
                 <h3 style={{ marginBottom: 12 }}>Active Order</h3>
-                <div className="glass-card" style={{ padding: '18px', background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                <div className="glass-card" style={{ padding: '18px', background: 'rgba(153,27,27,0.05)', border: '1px solid rgba(153,27,27,0.18)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>{activeOrders[0].restaurant.name}</p>
-                    <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 100, background: 'rgba(168,85,247,0.15)', color: 'var(--soft-purple)', fontWeight: 500 }}>
+                    <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 100, background: 'rgba(153,27,27,0.12)', color: 'var(--soft-purple)', fontWeight: 500 }}>
                       {STATUS_META[activeOrders[0].status]?.label}
                     </span>
                   </div>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
                     {activeOrders[0].items.map(i => `${i.quantity}× ${i.name}`).join(', ')}
                   </p>
-                  <Link to={`/track/${activeOrders[0].id}`} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '10px' }}>
-                    📍 Track Order
+                  <Link to={`/track/${activeOrders[0].id}`} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <MapPin size={14} /> Track Order
                   </Link>
                 </div>
               </div>

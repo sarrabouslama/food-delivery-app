@@ -1,7 +1,9 @@
-// src/hooks/useWebSocket.ts
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { getSocket } from '../lib/socket';
 
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered' | 'cancelled';
+export type OrderStatus =
+  | 'pending' | 'confirmed' | 'preparing' | 'ready'
+  | 'on_the_way' | 'delivered' | 'cancelled';
 
 export interface OrderUpdate {
   orderId: string;
@@ -9,127 +11,119 @@ export interface OrderUpdate {
   message: string;
   timestamp: string;
   estimatedMinutes?: number;
-  driverLocation?: { lat: number; lng: number };
 }
 
-interface UseWebSocketOptions {
-  url?: string;
-  orderId?: string;
-  onUpdate?: (update: OrderUpdate) => void;
-  useMock?: boolean;
+export interface WsNotification {
+  id: string;
+  type: 'ORDER_UPDATE' | 'PAYMENT' | 'SYSTEM';
+  title: string;
+  message: string;
+  timestamp: string;
 }
 
-const MOCK_UPDATES: Partial<Record<OrderStatus, { message: string; estimatedMinutes?: number }>> = {
-  pending:     { message: 'Order received! Waiting for restaurant confirmation.', estimatedMinutes: 35 },
-  confirmed:   { message: 'Restaurant confirmed your order!', estimatedMinutes: 30 },
-  preparing:   { message: 'Chef is preparing your meal 🍳', estimatedMinutes: 20 },
-  ready:       { message: 'Your order is ready! Assigning a driver...', estimatedMinutes: 15 },
-  on_the_way:  { message: 'Driver picked up your order. On the way! 🛵', estimatedMinutes: 10 },
-  delivered:   { message: 'Order delivered! Enjoy your meal 🎉' },
+// Backend sends uppercase; map to frontend lowercase equivalents
+const STATUS_MAP: Record<string, OrderStatus> = {
+  PENDING: 'pending',
+  CONFIRMED: 'confirmed',
+  PREPARING: 'preparing',
+  READY: 'ready',
+  OUT_FOR_DELIVERY: 'on_the_way',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
 };
 
-const STATUS_SEQUENCE: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way', 'delivered'];
+const STATUS_MESSAGES: Record<OrderStatus, string> = {
+  pending:    'Order received — waiting for restaurant confirmation.',
+  confirmed:  'Restaurant confirmed your order!',
+  preparing:  'Chef is preparing your meal…',
+  ready:      'Your order is ready! Driver on the way…',
+  on_the_way: 'Driver picked up your order — on the way!',
+  delivered:  'Order delivered! Enjoy your meal!',
+  cancelled:  'Order has been cancelled.',
+};
 
-export function useWebSocket({ url, orderId, onUpdate, useMock = true }: UseWebSocketOptions) {
+const ETA: Partial<Record<OrderStatus, number>> = {
+  pending: 35, confirmed: 30, preparing: 20, ready: 15, on_the_way: 10,
+};
+
+interface UseWebSocketOptions {
+  orderId?: string;
+  onUpdate?: (u: OrderUpdate) => void;
+  onNotification?: (n: WsNotification) => void;
+  initialStatus?: OrderStatus;
+}
+
+export function useWebSocket({
+  orderId,
+  onUpdate,
+  onNotification,
+  initialStatus = 'pending',
+}: UseWebSocketOptions) {
   const [connected, setConnected] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState<OrderStatus>('pending');
+  const [currentStatus, setCurrentStatus] = useState<OrderStatus>(initialStatus);
   const [updates, setUpdates] = useState<OrderUpdate[]>([]);
-  const wsRef = useRef<WebSocket | null>(null);
-  const mockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mockIndexRef = useRef(0);
 
-  const pushUpdate = useCallback((update: OrderUpdate) => {
-    setCurrentStatus(update.status);
-    setUpdates(prev => [...prev, update]);
-    onUpdate?.(update);
-  }, [onUpdate]);
+  const cbUpdate = useRef(onUpdate);
+  const cbNotif  = useRef(onNotification);
+  // Track whether a real WS event has arrived; only update from initialStatus if not
+  const hasReceivedUpdate = useRef(false);
 
-  // Mock real-time updates (used when backend isn't ready)
-  const startMock = useCallback(() => {
-    if (!orderId) return;
-    setConnected(true);
-    mockIndexRef.current = 0;
+  useEffect(() => { cbUpdate.current = onUpdate; }, [onUpdate]);
+  useEffect(() => { cbNotif.current  = onNotification; }, [onNotification]);
 
-    // Fire first update immediately
-    const first = STATUS_SEQUENCE[0];
-    pushUpdate({
-      orderId,
-      status: first,
-      message: MOCK_UPDATES[first]!.message,
-      timestamp: new Date().toISOString(),
-      estimatedMinutes: MOCK_UPDATES[first]!.estimatedMinutes,
-    });
-
-    mockIntervalRef.current = setInterval(() => {
-      mockIndexRef.current += 1;
-      if (mockIndexRef.current >= STATUS_SEQUENCE.length) {
-        clearInterval(mockIntervalRef.current!);
-        return;
-      }
-      const status = STATUS_SEQUENCE[mockIndexRef.current];
-      const info = MOCK_UPDATES[status]!;
-      pushUpdate({
-        orderId,
-        status,
-        message: info.message,
-        timestamp: new Date().toISOString(),
-        estimatedMinutes: info.estimatedMinutes,
-      });
-    }, 5000); // Advance every 5s for demo; set to 60000 for real
-  }, [orderId, pushUpdate]);
-
+  // Sync initialStatus → currentStatus whenever the loaded order data arrives,
+  // but stop doing so once a live WebSocket update has been received.
   useEffect(() => {
-    if (!orderId) return;
-
-    if (useMock) {
-      startMock();
-      return () => {
-        if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
-        setConnected(false);
-      };
+    if (!hasReceivedUpdate.current) {
+      setCurrentStatus(initialStatus);
     }
+  }, [initialStatus]);
 
-    // Real WebSocket connection
-    const wsUrl = url || `ws://localhost:3000/ws`;
-    try {
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        setConnected(true);
-        ws.send(JSON.stringify({ event: 'subscribe_order', orderId }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data: OrderUpdate = JSON.parse(event.data);
-          if (data.orderId === orderId) pushUpdate(data);
-        } catch (e) {
-          console.error('WebSocket parse error', e);
-        }
-      };
-
-      ws.onclose = () => setConnected(false);
-      ws.onerror = () => {
-        console.warn('WebSocket error, falling back to mock');
-        setConnected(false);
-        startMock();
-      };
-    } catch {
-      startMock();
-    }
-
-    return () => {
-      wsRef.current?.close();
-      if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
-    };
-  }, [orderId, url, useMock, pushUpdate, startMock]);
-
-  const sendMessage = useCallback((event: string, data?: unknown) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ event, ...(data as Record<string, unknown>) }));
-    }
+  const push = useCallback((u: OrderUpdate) => {
+    hasReceivedUpdate.current = true;
+    setCurrentStatus(u.status);
+    setUpdates(p => [...p, u]);
+    cbUpdate.current?.(u);
   }, []);
 
-  return { connected, currentStatus, updates, sendMessage };
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const onConnect    = () => setConnected(true);
+    const onDisconnect = () => setConnected(false);
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    if (socket.connected) setConnected(true);
+
+    if (orderId) socket.emit('order:subscribe', { orderId });
+
+    const onStatusUpdate = (d: { orderId: string; toStatus: string; timestamp: string }) => {
+      if (orderId && d.orderId !== orderId) return;
+      const status = STATUS_MAP[d.toStatus] ?? ('pending' as OrderStatus);
+      push({
+        orderId: d.orderId,
+        status,
+        message: STATUS_MESSAGES[status],
+        timestamp: d.timestamp,
+        estimatedMinutes: ETA[status],
+      });
+    };
+
+    const onNotif = (n: WsNotification) => cbNotif.current?.(n);
+
+    socket.on('order:status_updated', onStatusUpdate);
+    socket.on('notification:new', onNotif);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('order:status_updated', onStatusUpdate);
+      socket.off('notification:new', onNotif);
+      if (orderId) socket.emit('order:unsubscribe', { orderId });
+    };
+  }, [orderId, push]);
+
+  return { connected, currentStatus, updates };
 }
