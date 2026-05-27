@@ -154,10 +154,7 @@ export const LoginPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Demo hint */}
-        <p className="text-center text-xs text-[#7c6fad]/70 mt-4">
-          Demo: <span className="font-mono">customer@test.com</span> · <span className="font-mono">password123</span>
-        </p>
+        
       </div>
     </div>
   )
