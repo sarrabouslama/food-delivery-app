@@ -2,6 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { AuditModule } from './modules/audit/audit.module';
+import { SseModule } from './modules/sse/sse.module';
+import { OrderEventsListener } from './modules/events/order-events.listener';
 // ── Shared modules ──────────────────────────────────────────
 import { PrismaModule } from './modules/prisma/prisma.module';
 
@@ -43,13 +48,15 @@ const isDev = process.env.NODE_ENV === 'development';
     NotificationsModule,
     AuthModule,
     UsersModule,
+    AuditModule,
+    SseModule,
     RestaurantsModule,
     OrdersModule,
     WebhooksModule,
     AppGraphQLModule,
   ],
 
-  // Dev simulator disabled — use real order creation via API to test
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService, OrderEventsListener],
 })
 export class AppModule { }
